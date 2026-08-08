@@ -132,21 +132,14 @@ export default function Settings() {
                   ["taxNumber", "الرقم الضريبي"],
                   ["currency", "العملة"],
                 ] as [keyof SettingsInput, string][]).map(([field, label]) => {
-                  const isDeveloperField = field === "businessName";
-                  const isReadOnly = isDeveloperField && user?.role !== "developer";
                   return (
                     <div key={field} className="space-y-1">
                       <label className="text-sm font-medium flex items-center gap-1.5">
                         <span>{label}</span>
-                        {isReadOnly && (
-                          <span className="text-[10px] bg-amber-100 text-amber-850 px-1.5 py-0.5 rounded font-bold">للمطور فقط 🔒</span>
-                        )}
                       </label>
                       <Input
                         value={(form[field] as string) ?? ""}
                         onChange={e => setField(field, e.target.value || null)}
-                        disabled={isReadOnly}
-                        className={isReadOnly ? "bg-slate-100 cursor-not-allowed opacity-80" : ""}
                       />
                     </div>
                   );
@@ -165,112 +158,91 @@ export default function Settings() {
               </CardContent>
             </Card>
 
-            {user?.role === "developer" ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle>أيقونة اللانشر وشعار النظام</CardTitle>
-                  <CardDescription>يظهر في الفاتورة الرئيسية والواجهات الرئيسية عند تفعيل "إظهار شعار المطعم"</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <input
-                    ref={logoInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={e => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      if (file.size > 5 * 1024 * 1024) {
-                        toast({ variant: "destructive", title: "حجم الصورة كبير جداً", description: "الحد الأقصى 5MB" });
-                        return;
-                      }
-                      const reader = new FileReader();
-                      reader.onload = ev => {
-                        const img = new Image();
-                        img.onload = () => {
-                          const canvas = document.createElement("canvas");
-                          const MAX = 400;
-                          let w = img.width, h = img.height;
-                          if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
-                          if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; }
-                          canvas.width = w; canvas.height = h;
-                          const ctx = canvas.getContext("2d")!;
-                          ctx.fillStyle = "#fff";
-                          ctx.fillRect(0, 0, w, h);
-                          ctx.drawImage(img, 0, 0, w, h);
-                          const compressed = canvas.toDataURL("image/jpeg", 0.75);
-                          setField("logoUrl", compressed);
-                           updateMutation.mutate({ data: { ...form, logoUrl: compressed } }, {
-                             onSuccess: () => {
-                               qc.invalidateQueries({ queryKey: getGetSettingsQueryKey() });
-                               toast({ title: "تم رفع الشعار وحفظ الإعدادات بنجاح" });
-                             },
-                             onError: () => toast({ variant: "destructive", title: "فشل في حفظ الشعار" })
-                           });
-                          toast({ title: "تم رفع الشعار", description: `${Math.round(compressed.length / 1024)}KB` });
-                        };
-                        img.src = ev.target?.result as string;
+            <Card>
+              <CardHeader>
+                <CardTitle>أيقونة اللانشر وشعار النشاط التجاري</CardTitle>
+                <CardDescription>يظهر في الفاتورة والواجهات الرئيسية عند إظهار شعار النشاط</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <input
+                  ref={logoInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    if (file.size > 5 * 1024 * 1024) {
+                      toast({ variant: "destructive", title: "حجم الصورة كبير جداً", description: "الحد الأقصى 5MB" });
+                      return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = ev => {
+                      const img = new Image();
+                      img.onload = () => {
+                        const canvas = document.createElement("canvas");
+                        const MAX = 400;
+                        let w = img.width, h = img.height;
+                        if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
+                        if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; }
+                        canvas.width = w; canvas.height = h;
+                        const ctx = canvas.getContext("2d")!;
+                        ctx.fillStyle = "#fff";
+                        ctx.fillRect(0, 0, w, h);
+                        ctx.drawImage(img, 0, 0, w, h);
+                        const compressed = canvas.toDataURL("image/jpeg", 0.75);
+                        setField("logoUrl", compressed);
+                        updateMutation.mutate({ data: { ...form, logoUrl: compressed } }, {
+                          onSuccess: () => {
+                            qc.invalidateQueries({ queryKey: getGetSettingsQueryKey() });
+                            toast({ title: "تم رفع الشعار وحفظ الإعدادات بنجاح" });
+                          },
+                          onError: () => toast({ variant: "destructive", title: "فشل في حفظ الشعار" })
+                        });
+                        toast({ title: "تم رفع الشعار", description: `${Math.round(compressed.length / 1024)}KB` });
                       };
-                      reader.readAsDataURL(file);
-                    }}
-                  />
-                  {form.logoUrl ? (
-                    <div className="flex items-center gap-4">
-                      <div className="border rounded-lg p-2 bg-white flex items-center justify-center w-32 h-20">
-                        <img src={form.logoUrl as string} alt="الشعار" className="max-w-full max-h-full object-contain" />
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <Button variant="outline" size="sm" onClick={() => logoInputRef.current?.click()} className="gap-2">
-                          <Upload className="w-3.5 h-3.5" />
-                          تغيير الشعار
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => {
-                          setField("logoUrl", null);
-                          updateMutation.mutate({ data: { ...form, logoUrl: null } }, {
-                            onSuccess: () => {
-                              qc.invalidateQueries({ queryKey: getGetSettingsQueryKey() });
-                              toast({ title: "تم حذف الشعار بنجاح" });
-                            }
-                          });
-                        }} className="gap-2 text-red-600 hover:text-red-700">
-                          <X className="w-3.5 h-3.5" />
-                          حذف الشعار
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => logoInputRef.current?.click()}
-                      className="w-full border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 hover:bg-muted/30 transition-colors cursor-pointer"
-                    >
-                      <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                      <p className="text-sm font-medium">انقر لرفع شعار المطعم</p>
-                      <p className="text-xs text-muted-foreground mt-1">PNG، JPG — الحد الأقصى 500KB</p>
-                    </button>
-                  )}
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="border-amber-100 bg-amber-55/10">
-                <CardHeader>
-                  <CardTitle className="text-sm flex items-center gap-1.5 text-slate-700">
-                    <span>أيقونة اللانشر وشعار النظام 🔒</span>
-                    <span className="text-[10px] bg-amber-100 text-amber-850 px-1.5 py-0.5 rounded font-bold">للمطور فقط</span>
-                  </CardTitle>
-                  <CardDescription className="text-xs text-slate-500">
-                    تعديل شعار النظام وأيقونة اللانشر متاح للمطور فقط لحماية الهوية والمظهر البرمجي الأساسي.
-                  </CardDescription>
-                </CardHeader>
-                {form.logoUrl && (
-                  <CardContent>
-                    <div className="border rounded-lg p-2 bg-white flex items-center justify-center w-32 h-20 opacity-60">
+                      img.src = ev.target?.result as string;
+                    };
+                    reader.readAsDataURL(file);
+                  }}
+                />
+                {form.logoUrl ? (
+                  <div className="flex items-center gap-4">
+                    <div className="border rounded-lg p-2 bg-white flex items-center justify-center w-32 h-20">
                       <img src={form.logoUrl as string} alt="الشعار" className="max-w-full max-h-full object-contain" />
                     </div>
-                  </CardContent>
+                    <div className="flex flex-col gap-2">
+                      <Button variant="outline" size="sm" onClick={() => logoInputRef.current?.click()} className="gap-2">
+                        <Upload className="w-3.5 h-3.5" />
+                        تغيير الشعار
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => {
+                        setField("logoUrl", null);
+                        updateMutation.mutate({ data: { ...form, logoUrl: null } }, {
+                          onSuccess: () => {
+                            qc.invalidateQueries({ queryKey: getGetSettingsQueryKey() });
+                            toast({ title: "تم حذف الشعار بنجاح" });
+                          }
+                        });
+                      }} className="gap-2 text-red-600 hover:text-red-700">
+                        <X className="w-3.5 h-3.5" />
+                        حذف الشعار
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => logoInputRef.current?.click()}
+                    className="w-full border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 hover:bg-muted/30 transition-colors cursor-pointer"
+                  >
+                    <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm font-medium">انقر لرفع شعار النشاط التجاري</p>
+                    <p className="text-xs text-muted-foreground mt-1">PNG، JPG — الحد الأقصى 5MB</p>
+                  </button>
                 )}
-              </Card>
-            )}
+              </CardContent>
+            </Card>
 
             <Card>
               <CardHeader>
