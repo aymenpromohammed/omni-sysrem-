@@ -99,9 +99,9 @@ export default function Login() {
       <div className="h-12 bg-gradient-to-r from-[#1e3a8a] to-[#0f172a] text-white flex items-center justify-between px-4 shadow-md border-b border-blue-900">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-white/10 p-1 flex items-center justify-center overflow-hidden border border-white/20">
-            <AppIcon alt="ItqanSoft" className="w-full h-full object-contain" />
+            <AppIcon alt="Omni System Pro" className="w-full h-full object-contain" />
           </div>
-          <span className="font-extrabold text-sm sm:text-base tracking-wide">نظام إتقان سوفت المتكامل للمبيعات والمطاعم</span>
+          <span className="font-extrabold text-sm sm:text-base tracking-wide">Omni System Pro - نظام إدارة المطاعم والمبيعات والحسابات</span>
         </div>
         
         {/* الترخيص لـ اسم المرخص له في المنتصف */}
@@ -185,14 +185,14 @@ export default function Login() {
           <div className="flex-1 flex flex-col items-center justify-center text-center z-10 my-auto">
             {/* الشعار المعتمد OmniSystem */}
             <div className="w-48 h-48 sm:w-56 sm:h-56 bg-white p-5 rounded-3xl shadow-xl border border-slate-200 mb-6 flex items-center justify-center transform hover:scale-105 transition-transform duration-300 overflow-hidden">
-              <AppLogo alt="Itqan Soft Logo" className="w-full h-full object-contain" />
+              <AppLogo alt="Omni System Pro Logo" className="w-full h-full object-contain" />
             </div>
             
             <h2 className="text-3xl sm:text-4xl font-black text-[#0f172a] tracking-tight mb-2">
-              إتقان سوفت
+              Omni System Pro
             </h2>
             <p className="text-sm sm:text-base font-semibold text-blue-800 bg-blue-50 border border-blue-200 px-4 py-1.5 rounded-full shadow-sm">
-              نظام إدارة المطاعم والمبيعات والحسابات المتكامل
+              نظام إدارة المطاعم والمبيعات والحسابات المتكامل - إتقان سوفت
             </p>
 
             {/* التواصل ومعلومات الدعم */}

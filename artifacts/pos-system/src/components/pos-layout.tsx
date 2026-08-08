@@ -33,8 +33,8 @@ export function PosLayout({ children }: { children: React.ReactNode }) {
         <div className="flex items-center gap-3">
           <AppIcon className="h-10 w-10 rounded-xl object-contain bg-white/10 p-0.5 border border-white/20" />
           <div className="leading-tight">
-            <div className="text-xs font-extrabold text-white tracking-wide">{settings?.businessName || "مطعم ومقاهي النخبة"}</div>
-            <div className="text-[10px] text-amber-400 font-bold">OmniSystem Pro</div>
+            <div className="text-sm font-black text-white tracking-wide">Omni System Pro</div>
+            <div className="text-[10px] text-amber-400 font-bold">{settings?.businessName || "مطعم ومقاهي النخبة"}</div>
           </div>
           <div className="w-px h-6 bg-white/20 mx-2" />
           <div className="flex items-center gap-1.5 text-sm text-white/70">
