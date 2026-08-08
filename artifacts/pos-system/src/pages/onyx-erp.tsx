@@ -44,12 +44,25 @@ export default function OnyxErpPage() {
     return params.get("tab") || "branches";
   };
 
+  const getSubFromLoc = (locStr: string) => {
+    let search = "";
+    if (locStr.includes("?")) search = locStr.substring(locStr.indexOf("?"));
+    else search = window.location.search;
+    const params = new URLSearchParams(search);
+    return params.get("sub") || "company_and_branch_info";
+  };
+
   const [erpActiveTab, setErpActiveTab] = useState(() => getTabFromLoc(location));
+  const [activeBranchTask, setActiveBranchTask] = useState(() => getSubFromLoc(location));
 
   useEffect(() => {
     const tab = getTabFromLoc(location);
     if (tab) {
       setErpActiveTab(tab);
+    }
+    const sub = getSubFromLoc(location);
+    if (sub) {
+      setActiveBranchTask(sub);
     }
   }, [location]);
 
@@ -58,6 +71,10 @@ export default function OnyxErpPage() {
       const tab = getTabFromLoc(window.location.search);
       if (tab) {
         setErpActiveTab(tab);
+      }
+      const sub = getSubFromLoc(window.location.search);
+      if (sub) {
+        setActiveBranchTask(sub);
       }
     };
     window.addEventListener("popstate", handleUrlChange);
@@ -1159,57 +1176,225 @@ export default function OnyxErpPage() {
                 
                 <CardContent className="p-4 space-y-4">
                   
-                  {/* Top Basic Block (Company and Branch core titles) */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-slate-100 p-3.5 rounded border border-slate-200 shadow-inner">
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-600">الشركة المالكة</label>
-                      <Input
-                        value={branchForm.company_name ?? "شركة عماد عقلان للتجارة والخدمات"}
-                        onChange={e => setBranchForm({ ...branchForm, company_name: e.target.value })}
-                        className="h-8 text-xs bg-white border-slate-300 font-semibold"
-                      />
+                  {/* Interactive Operations Dropdown Menu Bar for Branch Tasks */}
+                  <div className="bg-slate-900 text-white p-3.5 rounded-lg border border-slate-800 shadow-md space-y-2.5">
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 font-bold shrink-0">
+                          <Building2 className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-extrabold text-amber-400">قائمة مهام وعمليات الفرع والشركة المالكة</span>
+                            <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/40 text-[10px]">
+                              قائمة منسدلة
+                            </Badge>
+                          </div>
+                          <p className="text-[11px] text-slate-300 mt-0.5">اختر العملية المطلوبة من القائمة المنسدلة لفتح واجهتها وإدارتها مباشرةً</p>
+                        </div>
+                      </div>
+
+                      {/* Main Dropdown Select */}
+                      <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
+                        <span className="text-xs text-amber-300 font-bold whitespace-nowrap hidden lg:inline">اختر من القائمة:</span>
+                        <select
+                          value={activeBranchTask}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setActiveBranchTask(val);
+                            const searchParams = new URLSearchParams(window.location.search);
+                            searchParams.set("tab", "branches");
+                            searchParams.set("sub", val);
+                            const newUrl = `${window.location.pathname}?${searchParams.toString()}`;
+                            window.history.pushState({}, "", newUrl);
+                          }}
+                          className="w-full md:w-80 h-10 rounded-md bg-slate-800 text-amber-300 font-extrabold border-2 border-amber-500/70 px-3 text-xs shadow-inner focus:outline-none focus:border-amber-400 cursor-pointer"
+                        >
+                          <option value="company_and_branch_info">🏢 1. بيانات الفرع والشركة المالكة والترويسات</option>
+                          <option value="location_and_contact">📍 2. الموقع الجغرافي وبيانات الاتصال وتحديد الـ GPS</option>
+                          <option value="financial_and_tax">💳 3. البيانات المالية والضرائب ودرجات التكلفة</option>
+                          <option value="operational_settings">⚙️ 4. إعدادات التشغيل والطابعات وشاشات المطبخ (KDS)</option>
+                          <option value="manager_and_personnel">👤 5. بيانات الإدارة والمسؤولين والمحاسبين</option>
+                          <option value="branch_operations">🔗 6. عمليات الربط بالمستودعات والأجهزة والكاشيرات</option>
+                          <option value="branch_reports_tab">📊 7. تقارير أداء الفرع والمبيعات والحركة المالية</option>
+                        </select>
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-600">اسم الفرع بالعربية</label>
-                      <Input
-                        value={branchForm.name ?? "الفرع الرئيسي"}
-                        onChange={e => setBranchForm({ ...branchForm, name: e.target.value })}
-                        className="h-8 text-xs bg-white border-slate-300 font-bold text-blue-800"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-600">الاسم الأجنبي للفرع</label>
-                      <Input
-                        value={branchForm.branch_foreign_name ?? "Main Branch"}
-                        onChange={e => setBranchForm({ ...branchForm, branch_foreign_name: e.target.value })}
-                        className="h-8 text-xs bg-white border-slate-300 font-semibold"
-                        dir="ltr"
-                      />
+
+                    {/* Quick Access Bar */}
+                    <div className="flex items-center gap-1 overflow-x-auto pt-2 border-t border-slate-800 scrollbar-none">
+                      {[
+                        { id: "company_and_branch_info", label: "الفرع والشركة", icon: "🏢" },
+                        { id: "location_and_contact", label: "الموقع والاتصال", icon: "📍" },
+                        { id: "financial_and_tax", label: "المالية والضرائب", icon: "💳" },
+                        { id: "operational_settings", label: "إعدادات التشغيل", icon: "⚙️" },
+                        { id: "manager_and_personnel", label: "بيانات الإدارة", icon: "👤" },
+                        { id: "branch_operations", label: "عمليات الربط", icon: "🔗" },
+                        { id: "branch_reports_tab", label: "التقارير والأداء", icon: "📊" },
+                      ].map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => {
+                            setActiveBranchTask(item.id);
+                            const searchParams = new URLSearchParams(window.location.search);
+                            searchParams.set("tab", "branches");
+                            searchParams.set("sub", item.id);
+                            const newUrl = `${window.location.pathname}?${searchParams.toString()}`;
+                            window.history.pushState({}, "", newUrl);
+                          }}
+                          className={cn(
+                            "px-2.5 py-1 rounded text-[11px] font-semibold whitespace-nowrap transition-colors flex items-center gap-1 shrink-0 cursor-pointer",
+                            activeBranchTask === item.id
+                              ? "bg-amber-500 text-slate-950 font-black shadow-sm"
+                              : "bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
+                          )}
+                        >
+                          <span>{item.icon}</span>
+                          <span>{item.label}</span>
+                        </button>
+                      ))}
                     </div>
                   </div>
 
-                  {/* Multi-Section Tabs */}
-                  <Tabs defaultValue="location_and_contact" className="w-full">
-                    <TabsList className="bg-slate-200 border border-slate-300 w-full grid grid-cols-3 md:grid-cols-6 h-auto p-1 rounded-md">
-                      <TabsTrigger value="location_and_contact" className="text-[11px] font-semibold py-2">
-                        الموقع والاتصال
-                      </TabsTrigger>
-                      <TabsTrigger value="financial_and_tax" className="text-[11px] font-semibold py-2">
-                        البيانات المالية
-                      </TabsTrigger>
-                      <TabsTrigger value="operational_settings" className="text-[11px] font-semibold py-2">
-                        إعدادات التشغيل
-                      </TabsTrigger>
-                      <TabsTrigger value="manager_and_personnel" className="text-[11px] font-semibold py-2">
-                        بيانات الإدارة
-                      </TabsTrigger>
-                      <TabsTrigger value="branch_operations" className="text-[11px] font-semibold py-2">
-                        عمليات الربط
-                      </TabsTrigger>
-                      <TabsTrigger value="branch_reports_tab" className="text-[11px] font-semibold py-2">
-                        التقارير والأداء
-                      </TabsTrigger>
-                    </TabsList>
+                  {/* Controlled Tabs */}
+                  <Tabs value={activeBranchTask} onValueChange={(val) => {
+                    setActiveBranchTask(val);
+                    const searchParams = new URLSearchParams(window.location.search);
+                    searchParams.set("tab", "branches");
+                    searchParams.set("sub", val);
+                    const newUrl = `${window.location.pathname}?${searchParams.toString()}`;
+                    window.history.pushState({}, "", newUrl);
+                  }} className="w-full">
+
+                    {/* 0. Company & Branch Info Tab */}
+                    <TabsContent value="company_and_branch_info" className="border border-slate-200 rounded-md p-4 space-y-4 mt-2 bg-white shadow-sm">
+                      <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5 border-b pb-2">
+                        <Building2 className="w-4 h-4 text-amber-600" />
+                        <span>البيانات الأساسية للفرع والشركة المالكة وترويسات الفواتير</span>
+                      </h4>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-bold text-slate-700">اسم الشركة المالكة (عربي)</label>
+                          <Input
+                            value={branchForm.company_name ?? "شركة عماد عقلان للتجارة والخدمات"}
+                            onChange={e => setBranchForm({ ...branchForm, company_name: e.target.value })}
+                            className="h-8 text-xs bg-slate-50 border-slate-300 font-semibold"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-bold text-slate-700">الاسم الأجنبي للشركة</label>
+                          <Input
+                            value={branchForm.foreign_name ?? "Emad Aqlaan Co."}
+                            onChange={e => setBranchForm({ ...branchForm, foreign_name: e.target.value })}
+                            className="h-8 text-xs bg-slate-50 border-slate-300 font-semibold"
+                            dir="ltr"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-bold text-slate-700">اسم الفرع (بالعربية)</label>
+                          <Input
+                            value={branchForm.name ?? "الفرع الرئيسي"}
+                            onChange={e => setBranchForm({ ...branchForm, name: e.target.value })}
+                            className="h-8 text-xs bg-slate-50 border-slate-300 font-bold text-blue-800"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-bold text-slate-700">الاسم الأجنبي للفرع</label>
+                          <Input
+                            value={branchForm.branch_foreign_name ?? "Main Branch"}
+                            onChange={e => setBranchForm({ ...branchForm, branch_foreign_name: e.target.value })}
+                            className="h-8 text-xs bg-slate-50 border-slate-300 font-semibold"
+                            dir="ltr"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-bold text-slate-700">رقم السجل التجاري للفرع</label>
+                          <Input
+                            value={branchForm.commercial_reg ?? "1002003"}
+                            onChange={e => setBranchForm({ ...branchForm, commercial_reg: e.target.value })}
+                            className="h-8 text-xs bg-slate-50 border-slate-300 font-mono"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-bold text-slate-700">المجموعة الفرعية / المنطقة</label>
+                          <Input
+                            value={branchForm.group_id ? `مجموعة الفروع ${branchForm.group_id}` : "المجموعة الرئيسية"}
+                            onChange={e => setBranchForm({ ...branchForm, group_id: e.target.value })}
+                            className="h-8 text-xs bg-slate-50 border-slate-300"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Headers & Receipt Titles */}
+                      <div className="bg-slate-50 border border-slate-200 rounded p-3.5 space-y-3 mt-3">
+                        <h5 className="text-xs font-bold text-slate-800 border-b pb-1.5 flex items-center justify-between">
+                          <span>ترويسة وعنوان الفاتورة المطبوعة (Headers & Receipt Printing)</span>
+                          <span className="text-[10px] text-slate-500">تظهر أعلى الفاتورة والايصالات الرسمية للفرع</span>
+                        </h5>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-semibold text-slate-600">ترويسة الفاتورة - السطر الأول (عربي)</label>
+                            <Input
+                              value={branchForm.header_1 ?? "مخابز الشام للخبز العربي"}
+                              onChange={e => setBranchForm({ ...branchForm, header_1: e.target.value })}
+                              className="h-8 text-xs bg-white border-slate-300"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-semibold text-slate-600">ترويسة الفاتورة - السطر الثاني (عربي)</label>
+                            <Input
+                              value={branchForm.header_2 ?? "فرع صنعاء الرئيسي"}
+                              onChange={e => setBranchForm({ ...branchForm, header_2: e.target.value })}
+                              className="h-8 text-white bg-white border-slate-300 text-slate-800"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-semibold text-slate-600">ترويسة الفاتورة - السطر الثالث (عربي)</label>
+                            <Input
+                              value={branchForm.header_3 ?? "تلفون: 777123456"}
+                              onChange={e => setBranchForm({ ...branchForm, header_3: e.target.value })}
+                              className="h-8 text-xs bg-white border-slate-300"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-semibold text-slate-600">Header Line 1 (English)</label>
+                            <Input
+                              value={branchForm.header_1_foreign ?? "Al-Sham Arabic Bakery"}
+                              onChange={e => setBranchForm({ ...branchForm, header_1_foreign: e.target.value })}
+                              className="h-8 text-xs bg-white border-slate-300"
+                              dir="ltr"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-semibold text-slate-600">Header Line 2 (English)</label>
+                            <Input
+                              value={branchForm.header_2_foreign ?? "Sanaa Main Branch"}
+                              onChange={e => setBranchForm({ ...branchForm, header_2_foreign: e.target.value })}
+                              className="h-8 text-xs bg-white border-slate-300"
+                              dir="ltr"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-semibold text-slate-600">Header Line 3 (English)</label>
+                            <Input
+                              value={branchForm.header_3_foreign ?? "Tel: 777123456"}
+                              onChange={e => setBranchForm({ ...branchForm, header_3_foreign: e.target.value })}
+                              className="h-8 text-xs bg-white border-slate-300"
+                              dir="ltr"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </TabsContent>
 
                     {/* 1. Location & Contact Tab */}
                     <TabsContent value="location_and_contact" className="border border-slate-200 rounded-md p-4 space-y-4 mt-2 bg-white shadow-sm">

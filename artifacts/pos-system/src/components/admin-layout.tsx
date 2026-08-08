@@ -124,6 +124,14 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     window.dispatchEvent(new Event("popstate"));
   };
 
+  const handleNavigateOmniBranchSub = (subId: string) => {
+    saveScrollState();
+    const targetUrl = `/onyx-erp?tab=branches&sub=${subId}`;
+    setLocation(targetUrl);
+    window.history.pushState({}, "", targetUrl);
+    window.dispatchEvent(new Event("popstate"));
+  };
+
   const handleNavigateHr = (viewId: string) => {
     saveScrollState();
     const targetUrl = `/hr?view=${viewId}`;
@@ -132,8 +140,23 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     window.dispatchEvent(new Event("popstate"));
   };
 
+  const [isBranchesDropdownOpen, setIsBranchesDropdownOpen] = useState(true);
+
   const omniServices = [
-    { id: "branches", name: "1. بيانات الفروع", icon: Building2 },
+    {
+      id: "branches",
+      name: "1. بيانات الفروع والشركة",
+      icon: Building2,
+      subItems: [
+        { id: "company_and_branch_info", name: "1. بيانات الفرع والشركة والترويسات" },
+        { id: "location_and_contact", name: "2. الموقع الجغرافي والـ GPS" },
+        { id: "financial_and_tax", name: "3. البيانات المالية والضرائب" },
+        { id: "operational_settings", name: "4. إعدادات التشغيل والطابعات" },
+        { id: "manager_and_personnel", name: "5. بيانات الإدارة والمسؤولين" },
+        { id: "branch_operations", name: "6. عمليات الربط بالمستودعات" },
+        { id: "branch_reports_tab", name: "7. تقارير أداء ومبيعات الفرع" },
+      ]
+    },
     { id: "sessions", name: "2. الصلاحيات والأمان", icon: ShieldCheck },
     { id: "invoices", name: "3. فواتير المبيعات", icon: ShoppingBag },
     { id: "products", name: "4. بطاقة الأصناف", icon: Box },
@@ -333,7 +356,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                 Omni System Pro
               </h1>
               <span className="text-[10px] text-amber-500 font-bold tracking-tight block truncate">
-                {settings?.businessName || settings?.restaurantName || "إتقان سوفت - المحل المصرح له"}
+                النظام المتكامل من إتقان سوفت
               </span>
             </div>
           </div>
@@ -563,22 +586,61 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                               const isSvcActive = isOmniActive && currentTab === svc.id;
 
                               return (
-                                <div
-                                  key={svc.id}
-                                  onClick={() => handleNavigateOmni(svc.id)}
-                                  className={cn(
-                                    "flex items-center justify-between px-2.5 py-1.5 rounded-md transition-all text-[11px] font-semibold cursor-pointer group/sub",
-                                    isSvcActive
-                                      ? "bg-indigo-600 text-white font-bold shadow-xs"
-                                      : "hover:bg-sidebar-accent/80 text-sidebar-foreground/80 hover:text-sidebar-foreground"
-                                  )}
-                                >
-                                  <div className="flex items-center gap-2 overflow-hidden">
-                                    <SvcIcon className={cn("w-3.5 h-3.5 shrink-0 transition-transform group-hover/sub:scale-110", isSvcActive ? "text-white" : "text-amber-500/80")} />
-                                    <span className="truncate">{svc.name}</span>
+                                <div key={svc.id} className="space-y-0.5">
+                                  <div
+                                    onClick={() => {
+                                      handleNavigateOmni(svc.id);
+                                      if (svc.subItems) {
+                                        setIsBranchesDropdownOpen(!isBranchesDropdownOpen);
+                                      }
+                                    }}
+                                    className={cn(
+                                      "flex items-center justify-between px-2.5 py-1.5 rounded-md transition-all text-[11px] font-semibold cursor-pointer group/sub",
+                                      isSvcActive
+                                        ? "bg-indigo-600 text-white font-bold shadow-xs"
+                                        : "hover:bg-sidebar-accent/80 text-sidebar-foreground/80 hover:text-sidebar-foreground"
+                                    )}
+                                  >
+                                    <div className="flex items-center gap-2 overflow-hidden">
+                                      <SvcIcon className={cn("w-3.5 h-3.5 shrink-0 transition-transform group-hover/sub:scale-110", isSvcActive ? "text-white" : "text-amber-500/80")} />
+                                      <span className="truncate">{svc.name}</span>
+                                    </div>
+                                    {svc.subItems ? (
+                                      <ChevronDown className={cn("w-3 h-3 transition-transform text-amber-400 shrink-0", isBranchesDropdownOpen ? "rotate-180" : "")} />
+                                    ) : (
+                                      isSvcActive && (
+                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0"></span>
+                                      )
+                                    )}
                                   </div>
-                                  {isSvcActive && (
-                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0"></span>
+
+                                  {/* SubItems Dropdown list */}
+                                  {svc.subItems && isBranchesDropdownOpen && (
+                                    <div className="pr-3.5 my-1 space-y-0.5 border-r-2 border-amber-500/40 mr-2 animate-in fade-in duration-150">
+                                      {svc.subItems.map((sub) => {
+                                        const currentSub = getParamFromLoc(location, "sub") || "company_and_branch_info";
+                                        const isSubActive = isSvcActive && currentSub === sub.id;
+
+                                        return (
+                                          <div
+                                            key={sub.id}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleNavigateOmniBranchSub(sub.id);
+                                            }}
+                                            className={cn(
+                                              "px-2 py-1 rounded text-[10px] font-medium cursor-pointer transition-colors flex items-center justify-between",
+                                              isSubActive
+                                                ? "bg-amber-500/20 text-amber-300 font-extrabold border border-amber-500/50"
+                                                : "text-slate-300 hover:text-white hover:bg-white/5"
+                                            )}
+                                          >
+                                            <span className="truncate">{sub.name}</span>
+                                            {isSubActive && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
                                   )}
                                 </div>
                               );
