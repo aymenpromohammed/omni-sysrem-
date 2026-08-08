@@ -34,6 +34,7 @@ export default function Login() {
 
   const [showLicenseModal, setShowLicenseModal] = useState(false);
   const [licenseModalMessage, setLicenseModalMessage] = useState("");
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,13 +85,68 @@ export default function Login() {
     );
   };
 
-  const handlePasswordChangeSubmit = (e: React.FormEvent) => {
+  const handlePasswordChangeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "تم تغيير كلمة المرور بنجاح",
-      description: "يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة.",
-    });
-    setActiveForm("login");
+    if (!username.trim()) {
+      toast({
+        variant: "destructive",
+        title: "خطأ في البيانات",
+        description: "يرجى إدخال اسم المستخدم أولاً.",
+      });
+      return;
+    }
+    if (!oldPassword) {
+      toast({
+        variant: "destructive",
+        title: "خطأ في البيانات",
+        description: "يرجى إدخال كلمة المرور الحالية.",
+      });
+      return;
+    }
+    if (!newPassword || newPassword.length < 3) {
+      toast({
+        variant: "destructive",
+        title: "خطأ في البيانات",
+        description: "كلمة المرور الجديدة يجب أن تكون 3 أحرف على الأقل.",
+      });
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: username.trim(),
+          oldPassword,
+          newPassword,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "فشل تغيير كلمة المرور");
+      }
+
+      toast({
+        title: "تم تغيير كلمة المرور بنجاح",
+        description: "يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة.",
+      });
+
+      setPassword(newPassword);
+      setOldPassword("");
+      setNewPassword("");
+      setActiveForm("login");
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "خطأ في تغيير كلمة المرور",
+        description: err.message || "حدث خطأ أثناء تعديل كلمة المرور",
+      });
+    } finally {
+      setIsChangingPassword(false);
+    }
   };
 
   return (
@@ -313,6 +369,19 @@ export default function Login() {
 
                 <form onSubmit={handlePasswordChangeSubmit} className="space-y-4">
                   <div className="space-y-1.5">
+                    <Label htmlFor="pass-username" className="text-xs font-black text-slate-700">اسم المستخدم</Label>
+                    <Input
+                      id="pass-username"
+                      type="text"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder="أدخل اسم المستخدم (مثال: admin)"
+                      required
+                      className="text-right border-slate-300 font-bold"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
                     <Label htmlFor="old-pass" className="text-xs font-black text-slate-700">كلمة المرور الحالية</Label>
                     <Input
                       id="old-pass"
@@ -340,10 +409,11 @@ export default function Login() {
 
                   <Button 
                     type="submit" 
-                    className="w-full bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-sm py-2.5 shadow-md flex items-center justify-center gap-2"
+                    disabled={isChangingPassword}
+                    className="w-full bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-sm py-2.5 shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     <Key className="w-4 h-4" />
-                    <span>تغيير كلمة المرور الآن</span>
+                    <span>{isChangingPassword ? "جاري التغيير..." : "تغيير كلمة المرور الآن"}</span>
                   </Button>
                 </form>
               </CardContent>

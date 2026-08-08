@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, verifyPassword, createSession, getSessionUser, deleteSession } from "../lib/sqlite";
+import { db, hashPassword, verifyPassword, createSession, getSessionUser, deleteSession } from "../lib/sqlite";
 import { logger } from "../lib/logger";
 
 const router = Router();
@@ -159,6 +159,50 @@ router.post("/auth/logout", (req, res) => {
     deleteSession(token);
   }
   res.json({ ok: true });
+});
+
+router.post("/auth/change-password", (req, res) => {
+  const { username, oldPassword, newPassword } = req.body;
+
+  let targetUsername = username;
+  if (!targetUsername) {
+    const authUser = getAuthUser(req);
+    if (authUser) {
+      targetUsername = authUser.username;
+    }
+  }
+
+  if (!targetUsername || !oldPassword || !newPassword) {
+    res.status(400).json({ error: "اسم المستخدم وكلمة المرور الحالية والجديدة مطلوبة جميعاً." });
+    return;
+  }
+
+  if (newPassword.length < 3) {
+    res.status(400).json({ error: "كلمة المرور الجديدة يجب أن تكون 3 أحرف على الأقل." });
+    return;
+  }
+
+  const user = db.prepare("SELECT * FROM users WHERE username=?").get(targetUsername) as any;
+  if (!user) {
+    res.status(404).json({ error: "اسم المستخدم غير موجود بالنظام." });
+    return;
+  }
+
+  if (!user.active) {
+    res.status(403).json({ error: "حساب المستخدم موقوف حالياً." });
+    return;
+  }
+
+  const isOldValid = verifyPassword(oldPassword, user.password_hash);
+  if (!isOldValid) {
+    res.status(400).json({ error: "كلمة المرور الحالية غير صحيحة." });
+    return;
+  }
+
+  const newHash = hashPassword(newPassword);
+  db.prepare("UPDATE users SET password_hash=? WHERE id=?").run(newHash, user.id);
+
+  res.json({ ok: true, message: "تم تغيير كلمة المرور بنجاح." });
 });
 
 export { getAuthUser };

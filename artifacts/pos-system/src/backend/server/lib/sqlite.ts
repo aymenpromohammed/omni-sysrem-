@@ -99,10 +99,20 @@ export function hashPassword(password: string): string {
 }
 
 export function verifyPassword(password: string, stored: string): boolean {
+  if (!stored) return false;
+  if (!stored.includes(":")) {
+    return password === stored;
+  }
   const [salt, storedHash] = stored.split(":");
-  const hash = scryptSync(password, salt, 64);
-  const storedBuf = Buffer.from(storedHash, "hex");
-  return timingSafeEqual(hash, storedBuf);
+  if (!salt || !storedHash) return false;
+  try {
+    const hash = scryptSync(password, salt, 64);
+    const storedBuf = Buffer.from(storedHash, "hex");
+    if (hash.length !== storedBuf.length) return false;
+    return timingSafeEqual(hash, storedBuf);
+  } catch (e) {
+    return false;
+  }
 }
 
 export const sessions = new Map<string, number>();
