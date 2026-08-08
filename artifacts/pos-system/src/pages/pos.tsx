@@ -18,9 +18,6 @@ import { Trash2, Plus, Minus, Printer, ShoppingCart, X, UtensilsCrossed } from "
 import { cn } from "@/lib/utils";
 import { ReceiptPreview, MasterReceiptSlip, DeptReceiptSlip } from "@/components/receipt";
 import { getOfflinePrintQueue, addOfflinePrintJob, removeOfflinePrintJob } from "@/lib/printQueue";
-import { qzService } from "@/lib/qzTrayService";
-import { useQZTray } from "@/hooks/useQZTray";
-import { QZTrayWidget } from "@/components/QZTrayWidget";
 
 type CartItem = {
   product: Product;
@@ -210,8 +207,6 @@ export default function Pos() {
   const [showMealConfirm, setShowMealConfirm] = useState(false);
   const [lookingUpEmp, setLookingUpEmp] = useState(false);
   const [offlineJobsCount, setOfflineJobsCount] = useState(0);
-  const [showQZTrayDialog, setShowQZTrayDialog] = useState(false);
-  const qz = useQZTray();
 
   useEffect(() => {
     const updateCount = () => {
@@ -635,20 +630,11 @@ export default function Pos() {
     document.getElementById(styleId)?.remove();
   };
 
-  // ── إرسال فاتورة قسم مباشرة عبر QZ Tray أو الطابعة الشبكية ───────────────────────
+  // ── إرسال فاتورة قسم مباشرة عبر الطابعة ───────────────────────
   const directPrint = async (order: Order, dept: any, items: any[], printerOverride?: string): Promise<boolean> => {
     const content = generateDeptReceiptText(order, dept, items, settings, printerSettings);
     const printerName = printerOverride ?? dept.printerName;
 
-    // 1. Try QZ Tray if connected
-    if (qz.connected) {
-      const qzRes = await qz.printData(printerName, content, 1, true);
-      if (qzRes.success) {
-        return true;
-      }
-    }
-
-    // 2. Fallback to backend direct print API
     return new Promise<boolean>(resolve => {
       printReceiptDirect.mutate(
         { data: { printerName, content, copies: 1 } },
@@ -688,7 +674,7 @@ export default function Pos() {
     });
   };
 
-  // ── طباعة صامتة كاملة عبر QZ Tray أو الطابعة الشبكية (بدون نافذة حوار) ───────────
+  // ── طباعة صامتة كاملة عبر الطابعة ───────────
   const silentPrintAll = async (order: Order): Promise<boolean> => {
     const mainPrinter = (printerSettings as any)?.mainPrinterName as string | null | undefined;
     const copiesCount = settings?.masterCopiesCount ?? 1;
@@ -704,27 +690,19 @@ export default function Pos() {
       const copyLabel = enabledCopies[i]?.label ?? `نسخة ${i + 1}`;
       let isOk = false;
 
-      // Try QZ Tray first
-      if (qz.connected) {
-        const qzRes = await qz.printData(mainPrinterName, masterText, 1, true);
-        isOk = qzRes.success;
-      }
-
-      if (!isOk) {
-        try {
-          const res = await new Promise<any>(resolve => {
-            printReceiptDirect.mutate(
-              { data: { printerName: mainPrinterName, content: masterText, copies: 1 } },
-              {
-                onSuccess: (data) => resolve(data),
-                onError: (err: any) => resolve({ ok: false, message: err?.message }),
-              }
-            );
-          });
-          isOk = !!(res && res.ok);
-        } catch (err: any) {
-          isOk = false;
-        }
+      try {
+        const res = await new Promise<any>(resolve => {
+          printReceiptDirect.mutate(
+            { data: { printerName: mainPrinterName, content: masterText, copies: 1 } },
+            {
+              onSuccess: (data) => resolve(data),
+              onError: (err: any) => resolve({ ok: false, message: err?.message }),
+            }
+          );
+        });
+        isOk = !!(res && res.ok);
+      } catch (err: any) {
+        isOk = false;
       }
 
       if (!isOk) {
@@ -1208,19 +1186,6 @@ export default function Pos() {
                   </button>
                 )}
                 <button
-                  onClick={() => setShowQZTrayDialog(true)}
-                  className={cn(
-                    "flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold rounded transition-colors border",
-                    qz.connected
-                      ? "bg-emerald-600/30 text-emerald-200 border-emerald-500/50 hover:bg-emerald-600/40"
-                      : "bg-red-600/30 text-red-200 border-red-500/50 hover:bg-red-600/40 animate-pulse"
-                  )}
-                  title="حالة نظام الطباعة QZ Tray"
-                >
-                  <Printer className="w-3.5 h-3.5" />
-                  <span>QZ Tray: {qz.connected ? "متصل" : "غير متصل"}</span>
-                </button>
-                <button
                   onClick={() => setMealMode(true)}
                   className="mr-auto flex items-center gap-1 px-2 py-1 text-[11px] font-bold text-amber-300 border border-amber-400/30 rounded hover:bg-amber-400/10 transition-colors"
                   title="وضع وجبات الموظفين"
@@ -1480,25 +1445,6 @@ export default function Pos() {
             <Button onClick={confirmReprint} disabled={!reprintReason.trim()}>
               <Printer className="w-4 h-4 me-2" />
               طباعة
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      {/* QZ Tray Settings & Diagnostics Dialog */}
-      <Dialog open={showQZTrayDialog} onOpenChange={setShowQZTrayDialog}>
-        <DialogContent className="max-w-lg bg-slate-900 border-slate-800 text-white p-0 overflow-hidden" dir="rtl">
-          <DialogHeader className="p-4 bg-slate-950 border-b border-slate-800">
-            <DialogTitle className="flex items-center gap-2 text-sm text-emerald-400">
-              <Printer className="w-4 h-4" />
-              <span>إدارة وربط طابعات QZ Tray الحرارية</span>
-            </DialogTitle>
-          </DialogHeader>
-          <div className="p-4">
-            <QZTrayWidget />
-          </div>
-          <DialogFooter className="p-3 bg-slate-950 border-t border-slate-800 flex justify-end">
-            <Button variant="outline" size="sm" onClick={() => setShowQZTrayDialog(false)} className="bg-slate-800 text-white border-slate-700 hover:bg-slate-700">
-              إغلاق
             </Button>
           </DialogFooter>
         </DialogContent>

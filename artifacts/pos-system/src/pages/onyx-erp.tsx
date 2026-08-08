@@ -44,25 +44,27 @@ export default function OnyxErpPage() {
     return params.get("tab") || "branches";
   };
 
-  const getSubFromLoc = (locStr: string) => {
+  const getSubFromLoc = (locStr: string, defaultSub = "company_and_branch_info") => {
     let search = "";
     if (locStr.includes("?")) search = locStr.substring(locStr.indexOf("?"));
     else search = window.location.search;
     const params = new URLSearchParams(search);
-    return params.get("sub") || "company_and_branch_info";
+    return params.get("sub") || defaultSub;
   };
 
   const [erpActiveTab, setErpActiveTab] = useState(() => getTabFromLoc(location));
-  const [activeBranchTask, setActiveBranchTask] = useState(() => getSubFromLoc(location));
+  const [activeBranchTask, setActiveBranchTask] = useState(() => getSubFromLoc(location, "company_and_branch_info"));
+  const [activeRbacTask, setActiveRbacTask] = useState(() => getSubFromLoc(location, "users_list"));
 
   useEffect(() => {
     const tab = getTabFromLoc(location);
     if (tab) {
       setErpActiveTab(tab);
     }
-    const sub = getSubFromLoc(location);
+    const sub = getSubFromLoc(location, "");
     if (sub) {
-      setActiveBranchTask(sub);
+      if (tab === "branches") setActiveBranchTask(sub);
+      if (tab === "sessions") setActiveRbacTask(sub);
     }
   }, [location]);
 
@@ -72,9 +74,10 @@ export default function OnyxErpPage() {
       if (tab) {
         setErpActiveTab(tab);
       }
-      const sub = getSubFromLoc(window.location.search);
+      const sub = getSubFromLoc(window.location.search, "");
       if (sub) {
-        setActiveBranchTask(sub);
+        if (tab === "branches") setActiveBranchTask(sub);
+        if (tab === "sessions") setActiveRbacTask(sub);
       }
     };
     window.addEventListener("popstate", handleUrlChange);
@@ -1844,7 +1847,45 @@ export default function OnyxErpPage() {
                 </div>
               </CardHeader>
               <CardContent className="p-4 space-y-4">
-                <Tabs defaultValue="users_list" className="w-full">
+                {/* Dynamic Dropdown Navigation Bar for RBAC Tasks */}
+                <div className="bg-gradient-to-r from-red-900/10 via-slate-900/10 to-indigo-900/10 p-3 rounded-lg border border-red-500/30 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-red-600 shrink-0" />
+                    <div>
+                      <h4 className="text-xs font-extrabold text-slate-800">إدارة الأمان والتحكم بصلاحيات المستخدمين (RBAC Hub):</h4>
+                      <p className="text-[11px] text-slate-500">اختر المهمة المطلوبة من القائمة المنسدلة لإدارة المستخدمين أو الصلاحيات أو الجلسات</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-700 shrink-0">القائمة المنسدلة للمهام:</span>
+                    <select
+                      value={activeRbacTask}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setActiveRbacTask(val);
+                        const u = new URL(window.location.href);
+                        u.searchParams.set("tab", "sessions");
+                        u.searchParams.set("sub", val);
+                        window.history.pushState({}, "", u.toString());
+                      }}
+                      className="text-xs font-bold bg-white text-slate-800 border-2 border-red-500/50 rounded-md px-3 py-1.5 shadow-xs focus:ring-2 focus:ring-red-500 focus:outline-none cursor-pointer"
+                    >
+                      <option value="users_list">👥 1. إدارة المستخدمين والموظفين</option>
+                      <option value="roles_tree">🌲 2. شجرة الصلاحيات والأدوار (RBAC)</option>
+                      <option value="active_sessions">🖥️ 3. الجلسات والأجهزة النشطة</option>
+                      <option value="audit_logs">📜 4. سجل العمليات والرقابة</option>
+                      <option value="security_reports">📊 5. تقارير ومؤشرات الأمان</option>
+                    </select>
+                  </div>
+                </div>
+
+                <Tabs value={activeRbacTask} onValueChange={(val) => {
+                  setActiveRbacTask(val);
+                  const u = new URL(window.location.href);
+                  u.searchParams.set("tab", "sessions");
+                  u.searchParams.set("sub", val);
+                  window.history.pushState({}, "", u.toString());
+                }} className="w-full">
                   <TabsList className="bg-slate-200 border border-slate-300 w-full grid grid-cols-2 md:grid-cols-5 h-auto p-1 rounded-md">
                     <TabsTrigger value="users_list" className="text-xs font-semibold py-2">
                       👥 المستخدمين والموظفين

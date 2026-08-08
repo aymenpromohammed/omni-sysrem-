@@ -124,9 +124,9 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     window.dispatchEvent(new Event("popstate"));
   };
 
-  const handleNavigateOmniBranchSub = (subId: string) => {
+  const handleNavigateOmniSub = (tabId: string, subId: string) => {
     saveScrollState();
-    const targetUrl = `/onyx-erp?tab=branches&sub=${subId}`;
+    const targetUrl = `/onyx-erp?tab=${tabId}&sub=${subId}`;
     setLocation(targetUrl);
     window.history.pushState({}, "", targetUrl);
     window.dispatchEvent(new Event("popstate"));
@@ -140,7 +140,14 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     window.dispatchEvent(new Event("popstate"));
   };
 
-  const [isBranchesDropdownOpen, setIsBranchesDropdownOpen] = useState(true);
+  const [openOmniDropdowns, setOpenOmniDropdowns] = useState<Record<string, boolean>>({
+    branches: true,
+    sessions: true,
+  });
+
+  const toggleOmniDropdown = (id: string) => {
+    setOpenOmniDropdowns((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
 
   const omniServices = [
     {
@@ -157,7 +164,18 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         { id: "branch_reports_tab", name: "7. تقارير أداء ومبيعات الفرع" },
       ]
     },
-    { id: "sessions", name: "2. الصلاحيات والأمان", icon: ShieldCheck },
+    {
+      id: "sessions",
+      name: "2. الصلاحيات والأمان (RBAC Hub)",
+      icon: ShieldCheck,
+      subItems: [
+        { id: "users_list", name: "1. إدارة المستخدمين والموظفين" },
+        { id: "roles_tree", name: "2. شجرة الصلاحيات والأدوار (RBAC)" },
+        { id: "active_sessions", name: "3. الجلسات والأجهزة النشطة" },
+        { id: "audit_logs", name: "4. سجل العمليات والرقابة" },
+        { id: "security_reports", name: "5. تقارير ومؤشرات الأمان" },
+      ]
+    },
     { id: "invoices", name: "3. فواتير المبيعات", icon: ShoppingBag },
     { id: "products", name: "4. بطاقة الأصناف", icon: Box },
     { id: "warehouses", name: "5. إدارة المستودعات", icon: Database },
@@ -591,7 +609,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                                     onClick={() => {
                                       handleNavigateOmni(svc.id);
                                       if (svc.subItems) {
-                                        setIsBranchesDropdownOpen(!isBranchesDropdownOpen);
+                                        toggleOmniDropdown(svc.id);
                                       }
                                     }}
                                     className={cn(
@@ -606,7 +624,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                                       <span className="truncate">{svc.name}</span>
                                     </div>
                                     {svc.subItems ? (
-                                      <ChevronDown className={cn("w-3 h-3 transition-transform text-amber-400 shrink-0", isBranchesDropdownOpen ? "rotate-180" : "")} />
+                                      <ChevronDown className={cn("w-3 h-3 transition-transform text-amber-400 shrink-0", openOmniDropdowns[svc.id] ? "rotate-180" : "")} />
                                     ) : (
                                       isSvcActive && (
                                         <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0"></span>
@@ -615,10 +633,11 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                                   </div>
 
                                   {/* SubItems Dropdown list */}
-                                  {svc.subItems && isBranchesDropdownOpen && (
+                                  {svc.subItems && openOmniDropdowns[svc.id] && (
                                     <div className="pr-3.5 my-1 space-y-0.5 border-r-2 border-amber-500/40 mr-2 animate-in fade-in duration-150">
                                       {svc.subItems.map((sub) => {
-                                        const currentSub = getParamFromLoc(location, "sub") || "company_and_branch_info";
+                                        const defaultSub = svc.id === "branches" ? "company_and_branch_info" : "users_list";
+                                        const currentSub = getParamFromLoc(location, "sub") || defaultSub;
                                         const isSubActive = isSvcActive && currentSub === sub.id;
 
                                         return (
@@ -626,7 +645,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                                             key={sub.id}
                                             onClick={(e) => {
                                               e.stopPropagation();
-                                              handleNavigateOmniBranchSub(sub.id);
+                                              handleNavigateOmniSub(svc.id, sub.id);
                                             }}
                                             className={cn(
                                               "px-2 py-1 rounded text-[10px] font-medium cursor-pointer transition-colors flex items-center justify-between",
