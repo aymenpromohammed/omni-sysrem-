@@ -271,10 +271,10 @@ function initSchema() {
     CREATE TABLE IF NOT EXISTS printer_settings (
       id INTEGER PRIMARY KEY DEFAULT 1,
       paper_width INTEGER NOT NULL DEFAULT 80,
-      left_margin REAL NOT NULL DEFAULT 4,
-      right_margin REAL NOT NULL DEFAULT 4,
-      top_margin REAL NOT NULL DEFAULT 2,
-      bottom_margin REAL NOT NULL DEFAULT 2,
+      left_margin REAL NOT NULL DEFAULT 8,
+      right_margin REAL NOT NULL DEFAULT 1.5,
+      top_margin REAL NOT NULL DEFAULT 1,
+      bottom_margin REAL NOT NULL DEFAULT 1,
       font_size INTEGER NOT NULL DEFAULT 10,
       line_spacing REAL NOT NULL DEFAULT 2,
       characters_per_line INTEGER NOT NULL DEFAULT 48
@@ -540,7 +540,8 @@ function runMigrations() {
   // printer_settings default row
   try {
     db.exec(`INSERT OR IGNORE INTO printer_settings (id, paper_width, left_margin, right_margin, top_margin, bottom_margin, font_size, line_spacing, characters_per_line)
-             VALUES (1, 80, 4, 4, 2, 2, 10, 2, 48)`);
+             VALUES (1, 80, 8, 1.5, 1, 1, 10, 2, 48)`);
+    db.exec(`UPDATE printer_settings SET left_margin = 8, right_margin = 1.5, top_margin = 1, bottom_margin = 1 WHERE id = 1 AND left_margin = 4 AND right_margin = 4`);
   } catch {}
 
   // Seed default safes if empty

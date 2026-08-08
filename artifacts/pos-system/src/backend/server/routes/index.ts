@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
-import authRouter from "./auth";
+import authRouter, { getAuthUser, checkLicenseStatus } from "./auth";
 import categoriesRouter from "./categories";
 import productsRouter from "./products";
 import ordersRouter from "./orders";
@@ -34,6 +34,36 @@ const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(authRouter);
+router.use(licensesRouter);
+
+// Global License Guard Middleware for all application endpoints
+router.use((req, res, next) => {
+  const path = req.path;
+  if (
+    path === "/health" ||
+    path.startsWith("/auth") ||
+    path.startsWith("/licenses") ||
+    path.startsWith("/license")
+  ) {
+    return next();
+  }
+
+  const user = getAuthUser(req);
+  if (user && (user.role === "developer" || user.username === "developer")) {
+    return next();
+  }
+
+  const license = checkLicenseStatus();
+  if (license.blocked) {
+    return res.status(403).json({
+      error: "license_blocked",
+      message: `${license.reason} توقف النظام بالكامل عن العمل. يرجى التواصل مع مسؤول النظام من شركة إتقان سوفت على الرقم: 777146387`
+    });
+  }
+
+  next();
+});
+
 router.use(categoriesRouter);
 router.use(productsRouter);
 router.use(ordersRouter);
@@ -59,7 +89,6 @@ router.use(kdsRouter);
 router.use(recipesRouter);
 router.use(tablesRouter);
 router.use(systemRouter);
-router.use(licensesRouter);
 router.use(auditRouter);
 router.use(onyxRouter);
 

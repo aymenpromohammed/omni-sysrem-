@@ -35,7 +35,9 @@ import {
   DollarSign,
   ClipboardList,
   Box,
-  ListTodo
+  ListTodo,
+  AlertTriangle,
+  Lock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AppIcon } from "./AppLogo";
@@ -46,6 +48,32 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   const logoutMutation = useLogout();
   const [location, setLocation] = useLocation();
   const sidebarNavRef = useRef<HTMLDivElement>(null);
+
+  const isDeveloper = user?.role === "developer" || user?.username === "developer";
+  const [licenseBlockedReason, setLicenseBlockedReason] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const checkLicense = async () => {
+      try {
+        const res = await fetch("/api/license/status");
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted) {
+            if (data.blocked && !isDeveloper) {
+              setLicenseBlockedReason(data.reason || "توقف الترخيص");
+            } else {
+              setLicenseBlockedReason(null);
+            }
+          }
+        }
+      } catch (e) {}
+    };
+
+    checkLicense();
+    const interval = setInterval(checkLicense, 8000);
+    return () => { isMounted = false; clearInterval(interval); };
+  }, [isDeveloper]);
 
   const [isOmniOpen, setIsOmniOpen] = useState(() => {
     return location.startsWith("/onyx-erp");
@@ -308,8 +336,6 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       }
     });
   };
-
-  const isDeveloper = user?.role === "developer";
 
   const navGroups = [
     {
@@ -720,6 +746,52 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           {children}
         </div>
       </main>
+
+      {/* Global License Kill Switch Lock Overlay */}
+      {licenseBlockedReason && !isDeveloper && (
+        <div className="fixed inset-0 z-[99999] bg-slate-950/95 backdrop-blur-xl flex items-center justify-center p-4">
+          <div className="bg-slate-900 border-2 border-red-500/50 text-white rounded-3xl p-8 max-w-lg w-full text-center space-y-6 shadow-2xl animate-in fade-in zoom-in-95 duration-300 dir-rtl">
+            <div className="w-20 h-20 bg-red-500/20 text-red-500 border-2 border-red-500/40 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+              <Lock className="w-10 h-10 animate-bounce" />
+            </div>
+
+            <div className="space-y-2">
+              <span className="px-3 py-1 bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-black rounded-full uppercase tracking-widest">
+                توقف النظام بالكامل 🔒
+              </span>
+              <h2 className="text-2xl font-black text-white pt-2">تم تجميد وإيقاف عمل النظام</h2>
+              <p className="text-sm text-slate-200 bg-slate-800/90 p-4 rounded-xl border border-slate-700 leading-relaxed font-semibold">
+                {licenseBlockedReason}
+              </p>
+            </div>
+
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 text-xs text-amber-300 space-y-1.5 text-right">
+              <p className="font-bold flex items-center gap-1.5 text-amber-400">
+                <AlertTriangle className="w-4 h-4 text-amber-400" />
+                تنبيه هام من إدارة النظام (إتقان سوفت):
+              </p>
+              <p className="text-slate-300 leading-relaxed">
+                قام المطور بإضافة أو تعديل فترة الترخيص وحالته بالانتهاء أو التوقف. لا يمكن للعميل أو المستثمر استخدام الشاشات والوظائف إلا بعد قيام المطور بتعديل الترخيص مجدداً.
+              </p>
+            </div>
+
+            <div className="pt-2 space-y-3">
+              <button
+                onClick={handleLogout}
+                className="w-full py-3.5 bg-red-600 hover:bg-red-700 text-white font-bold text-sm rounded-xl transition-all shadow-lg flex items-center justify-center gap-2"
+              >
+                <LogOut className="w-4 h-4" />
+                تسجيل الدخول بحساب المطور لتحديث الترخيص
+              </button>
+
+              <div className="text-xs text-slate-400 font-mono flex items-center justify-center gap-2 pt-1">
+                <span>للدعم الفني وتحديث التراخيص:</span>
+                <a href="tel:777146387" className="text-amber-400 hover:underline font-bold dir-ltr inline-block">777146387</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

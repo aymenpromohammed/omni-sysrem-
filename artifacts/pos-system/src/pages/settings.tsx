@@ -821,8 +821,8 @@ function PrinterLayoutTab() {
   const updateMutation = useUpdatePrinterSettings();
 
   const defaults: PrinterSettingsInput & { mainPrinterName?: string | null } = {
-    paperWidth: 80, leftMargin: 4, rightMargin: 4,
-    topMargin: 2, bottomMargin: 2, fontSize: 10,
+    paperWidth: 80, leftMargin: 8, rightMargin: 1.5,
+    topMargin: 1, bottomMargin: 1, fontSize: 10,
     lineSpacing: 2, charactersPerLine: 48, mainPrinterName: null,
   };
 
@@ -846,12 +846,12 @@ function PrinterLayoutTab() {
   };
 
   const handleTestPrint = () => {
-    const lm = form.leftMargin ?? 4;
-    const rm = form.rightMargin ?? 4;
+    const lm = form.leftMargin ?? 8;
+    const rm = form.rightMargin ?? 1.5;
     const pw = form.paperWidth ?? 80;
     const fs = form.fontSize ?? 10;
-    const tm = form.topMargin ?? 2;
-    const bm = form.bottomMargin ?? 2;
+    const tm = form.topMargin ?? 1;
+    const bm = form.bottomMargin ?? 1;
     const style = document.createElement("style");
     style.id = "__test-print-style__";
     style.textContent = `
@@ -910,8 +910,8 @@ function PrinterLayoutTab() {
         <CardHeader>
           <CardTitle>الهوامش</CardTitle>
           <CardDescription>
-            عرض المحتوى = {form.paperWidth ?? 80}mm − {form.leftMargin ?? 4}mm − {form.rightMargin ?? 4}mm ={" "}
-            <strong>{(form.paperWidth ?? 80) - (form.leftMargin ?? 4) - (form.rightMargin ?? 4)}mm</strong>
+            عرض المحتوى = {form.paperWidth ?? 80}mm − {form.leftMargin ?? 8}mm − {form.rightMargin ?? 1.5}mm ={" "}
+            <strong>{(form.paperWidth ?? 80) - (form.leftMargin ?? 8) - (form.rightMargin ?? 1.5)}mm</strong>
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0 px-6">

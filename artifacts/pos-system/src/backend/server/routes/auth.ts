@@ -34,11 +34,16 @@ export function getAuthUser(req: any) {
   return null;
 }
 
-function checkLicenseStatus() {
+export function checkLicenseStatus() {
   try {
-    const lic = db.prepare("SELECT * FROM licenses WHERE status='active' ORDER BY id DESC LIMIT 1").get() as any;
+    const lic = db.prepare("SELECT * FROM licenses ORDER BY id DESC LIMIT 1").get() as any;
     if (!lic) {
-      return { blocked: true, reason: "لا يوجد ترخيص مفعّل لاستخدام النظام. يتوجب تسجيل الدخول بحساب المطور لتفعيل الترخيص." };
+      return { blocked: true, reason: "لا يوجد ترخيص مفعّل لاستخدام النظام. يتوجب تفعيل ترخيص جديد أو تعديله من قبل المطور." };
+    }
+
+    if (lic.status !== "active") {
+      const statusAr = lic.status === "suspended" ? "موقوف" : lic.status === "expired" ? "منتهي" : "معلق";
+      return { blocked: true, reason: `ترخيص النظام متوقف حالياً (حالة الترخيص: ${statusAr}). يتوجب على المطور تعديل حالة الترخيص لاستئناف العمل.` };
     }
 
     const expStr = lic.expire_date || lic.expires_at;
@@ -47,20 +52,24 @@ function checkLicenseStatus() {
       if (!isNaN(expireDate.getTime())) {
         expireDate.setHours(23, 59, 59, 999);
         const currentDate = new Date();
-        currentDate.setHours(0, 0, 0, 0);
 
         if (currentDate > expireDate) {
-          return { blocked: true, reason: `لقد انتهت فترة صلاحية ترخيص النظام في تاريخ (${expStr}).` };
+          return { blocked: true, reason: `لقد انتهت فترة صلاحية ترخيص النظام المحددة في تاريخ (${expStr}). توقف النظام بالكامل حتى يتم تعديل الترخيص من المطور.` };
         }
       }
     }
 
-    return { blocked: false };
+    return { blocked: false, licenseKey: lic.license_key, expireDate: expStr };
   } catch (e) {
     console.error("Error checking license status:", e);
     return { blocked: false };
   }
 }
+
+router.get("/license/status", (req, res) => {
+  const status = checkLicenseStatus();
+  res.json(status);
+});
 
 router.post("/auth/login", (req, res) => {
   const { username, password } = req.body;

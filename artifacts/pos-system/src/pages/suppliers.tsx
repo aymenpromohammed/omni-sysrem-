@@ -57,7 +57,7 @@ export default function SuppliersPage() {
               <CardContent className="grid grid-cols-5 gap-3">
                 <Input value={supName} onChange={e => setSupName(e.target.value)} placeholder="اسم المورد" />
                 <Input value={supPhone} onChange={e => setSupPhone(e.target.value)} placeholder="الهاتف" />
-                <Input value={supEmail} onChange={e => setSupEmail(e.target.value)} placeholder="البريد الإلكتروني" />
+                <Input value={supEmail} onChange={e => setSupEmail(e.target.value)} placeholder="البريد الإلكتروني (اختياري)" />
                 <Input value={supAddress} onChange={e => setSupAddress(e.target.value)} placeholder="العنوان" />
                 <Button onClick={() => addSup.mutate()} disabled={!supName.trim()} className="gap-1"><Plus className="w-4 h-4" />إضافة مورد</Button>
               </CardContent>

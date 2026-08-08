@@ -35,7 +35,7 @@ function toApi(row: ReturnType<typeof getRow>) {
 }
 
 function defaultSettings() {
-  return { paperWidth: 80, leftMargin: 4, rightMargin: 4, topMargin: 2, bottomMargin: 2, fontSize: 10, lineSpacing: 2, charactersPerLine: 48, mainPrinterName: null };
+  return { paperWidth: 80, leftMargin: 8, rightMargin: 1.5, topMargin: 1, bottomMargin: 1, fontSize: 10, lineSpacing: 2, charactersPerLine: 48, mainPrinterName: null };
 }
 
 router.get("/printer-settings", (_req, res) => {
@@ -61,8 +61,8 @@ router.put("/printer-settings", (req, res) => {
       characters_per_line = excluded.characters_per_line,
       main_printer_name = excluded.main_printer_name
   `).run(
-    b.paperWidth ?? 80, b.leftMargin ?? 4, b.rightMargin ?? 4,
-    b.topMargin ?? 2, b.bottomMargin ?? 2,
+    b.paperWidth ?? 80, b.leftMargin ?? 8, b.rightMargin ?? 1.5,
+    b.topMargin ?? 1, b.bottomMargin ?? 1,
     b.fontSize ?? 10, b.lineSpacing ?? 2, b.charactersPerLine ?? 48,
     b.mainPrinterName ?? null,
   );

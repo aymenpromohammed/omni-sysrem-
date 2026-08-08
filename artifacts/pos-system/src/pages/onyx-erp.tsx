@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+import { cn } from "@/lib/utils";
 import { AdminLayout } from "@/components/admin-layout";
 import { useAuth } from "@/components/auth-provider";
 import { useToast } from "@/hooks/use-toast";

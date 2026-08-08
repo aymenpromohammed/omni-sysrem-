@@ -14,6 +14,7 @@ function fetchAuth(url: string, opts: RequestInit = {}) {
 }
 async function apiGet(url: string) { const r = await fetchAuth(url); if (!r.ok) throw new Error(await r.text()); return r.json(); }
 async function apiPost(url: string, body: any) { const r = await fetchAuth(url, { method: "POST", body: JSON.stringify(body) }); if (!r.ok) throw new Error(await r.text()); return r.json(); }
+async function apiPatch(url: string, body: any) { const r = await fetchAuth(url, { method: "PATCH", body: JSON.stringify(body) }); if (!r.ok) throw new Error(await r.text()); return r.json(); }
 async function apiDel(url: string) { const r = await fetchAuth(url, { method: "DELETE" }); if (!r.ok && r.status !== 204) throw new Error(await r.text()); }
 
 export default function LicensesPage() {
@@ -67,6 +68,12 @@ export default function LicensesPage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["licenses"] }); toast({ title: "تم الحذف" }); }
   });
 
+  const updateLicMut = useMutation({
+    mutationFn: ({ id, body }: { id: number; body: any }) => apiPatch(`/api/licenses/${id}`, body),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["licenses"] }); toast({ title: "تم تحديث بيانات الترخيص بنجاح" }); },
+    onError: (e: any) => toast({ variant: "destructive", title: "فشل التحديث", description: e.message })
+  });
+
   const removeDeviceMut = useMutation({
     mutationFn: (deviceId: number) => apiDel(`/api/licenses/devices/${deviceId}`),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["licenses"] }); toast({ title: "تم إلغاء ربط الجهاز بنجاح" }); },
@@ -79,8 +86,15 @@ export default function LicensesPage() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2"><KeyRound className="w-6 h-6 text-primary" />نظام التراخيص وإدارة الأجهزة (Developer License)</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            إدارة مفاتيح التفعيل وتحديد عدد الأجهزة المسموح بها لكل عميل مع تتبع بصمات الأجهزة النشطة.
+            إدارة مفاتيح التفعيل وتحديد تاريخ انتهائها وتغيير حالة الترخيص للتحكم الفوري بتوقف واستئناف عمل النظام.
           </p>
+        </div>
+
+        <div className="p-3 bg-amber-500/10 border-2 border-amber-500/30 rounded-xl flex items-center gap-3 text-xs text-amber-900 font-semibold shadow-xs">
+          <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+          <span>
+            تنبيه المطور: عند تحديد تاريخ ترخيص منتهي الصلاحية أو إيقاف حالة الترخيص (موقوف)، يتوقف النظام فوراً بالكامل لجميع المستخدمين، ولا يستأنف العمل إلا بعد قيام المطور بتعديل الترخيص وتحديث تاريخ الصلاحية.
+          </span>
         </div>
 
         <Card>
@@ -109,6 +123,9 @@ export default function LicensesPage() {
               {(licenses as any[]).map(l => {
                 const isExpanded = expandedLicenseId === l.id;
                 const activeCount = l.devices?.length ?? 0;
+                const isExpired = l.expires_at && l.expires_at !== "غير محدد" && new Date(l.expires_at) < new Date();
+                const isSuspended = l.status === "suspended";
+
                 return (
                   <>
                     <tr key={l.id} className="hover:bg-muted/30">
@@ -124,8 +141,37 @@ export default function LicensesPage() {
                           <span className="text-muted-foreground">({isExpanded ? "إخفاء التفاصيل" : "عرض الأجهزة"})</span>
                         </button>
                       </td>
-                      <td className="p-3 text-muted-foreground">{l.expires_at}</td>
-                      <td className="p-3"><span className="px-2.5 py-0.5 rounded-full text-xs bg-green-100 text-green-800 font-semibold">نشط</span></td>
+                      <td className="p-3">
+                        <input
+                          type="date"
+                          defaultValue={l.expire_date || l.expires_at || ""}
+                          onChange={(e) => {
+                            const newDate = e.target.value;
+                            updateLicMut.mutate({ id: l.id, body: { expire_date: newDate, expires_at: newDate } });
+                          }}
+                          className="text-xs bg-white text-slate-900 border border-slate-300 rounded px-2 py-1 font-mono focus:ring-1 focus:ring-primary focus:outline-none"
+                        />
+                      </td>
+                      <td className="p-3">
+                        <select
+                          value={l.status ?? "active"}
+                          onChange={(e) => {
+                            const newStatus = e.target.value;
+                            updateLicMut.mutate({ id: l.id, body: { status: newStatus } });
+                          }}
+                          className={`text-xs font-bold rounded-full px-2.5 py-1 border cursor-pointer ${
+                            isSuspended
+                              ? "bg-red-100 text-red-800 border-red-300"
+                              : isExpired
+                              ? "bg-amber-100 text-amber-800 border-amber-300"
+                              : "bg-green-100 text-green-800 border-green-300"
+                          }`}
+                        >
+                          <option value="active">🟢 نشط</option>
+                          <option value="suspended">🔴 موقوف (توقف النظام)</option>
+                          <option value="expired">🟡 منتهي الصلاحية</option>
+                        </select>
+                      </td>
                       <td className="p-3 text-center flex items-center justify-center gap-2">
                         <Button variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => confirm("هل أنت متأكد من حذف هذا الترخيص بالكامل؟") && delMut.mutate(l.id)}>
                           <Trash2 className="w-4 h-4" />
