@@ -29,6 +29,7 @@ import Tables from "@/pages/tables";
 import Shifts from "@/pages/shifts";
 import Currencies from "@/pages/currencies";
 import Audit from "@/pages/audit";
+import SystemGuidePage from "@/pages/system-guide";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -114,6 +115,9 @@ function Router() {
       </Route>
       <Route path="/audit">
         <ProtectedRoute requireAdmin><Audit /></ProtectedRoute>
+      </Route>
+      <Route path="/system-guide">
+        <ProtectedRoute><SystemGuidePage /></ProtectedRoute>
       </Route>
       <Route path="/">
         <ProtectedRoute><Pos /></ProtectedRoute>

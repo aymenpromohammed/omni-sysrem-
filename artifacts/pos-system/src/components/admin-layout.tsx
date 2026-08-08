@@ -37,7 +37,8 @@ import {
   Box,
   ListTodo,
   AlertTriangle,
-  Lock
+  Lock,
+  BookOpen
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AppIcon } from "./AppLogo";
@@ -400,6 +401,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         { name: "المستخدمين والصلاحيات", href: "/users", icon: UserCircle },
         ...(isDeveloper ? [{ name: "إدارة التراخيص والتفعيل", href: "/licenses", icon: KeyRound }] : []),
         { name: "إعدادات النظام العامة", href: "/settings", icon: Settings },
+        { name: "دليل استخدام النظام التفصيلي", href: "/system-guide", icon: BookOpen, highlight: true },
       ]
     }
   ];
