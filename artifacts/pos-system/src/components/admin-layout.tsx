@@ -160,6 +160,14 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     window.dispatchEvent(new Event("popstate"));
   };
 
+  const handleNavigateOmniSubTask = (tabId: string, subId: string, subTaskId: string) => {
+    saveScrollState();
+    const targetUrl = `/onyx-erp?tab=${tabId}&sub=${subId}&subTask=${subTaskId}`;
+    setLocation(targetUrl);
+    window.history.pushState({}, "", targetUrl);
+    window.dispatchEvent(new Event("popstate"));
+  };
+
   const handleNavigateHr = (viewId: string) => {
     saveScrollState();
     const targetUrl = `/hr?view=${viewId}`;
@@ -171,6 +179,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   const [openOmniDropdowns, setOpenOmniDropdowns] = useState<Record<string, boolean>>({
     branches: true,
     sessions: true,
+    users_list: true,
   });
 
   const toggleOmniDropdown = (id: string) => {
@@ -197,7 +206,17 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       name: "2. الصلاحيات والأمان (RBAC Hub)",
       icon: ShieldCheck,
       subItems: [
-        { id: "users_list", name: "1. إدارة المستخدمين والموظفين" },
+        {
+          id: "users_list",
+          name: "1. إدارة المستخدمين والموظفين",
+          nestedSubItems: [
+            { id: "all_users", name: "👥 دليل وسجل كادر الموظفين" },
+            { id: "add_user", name: "➕ إضافة موظف ومستخدم جديد" },
+            { id: "edit_user", name: "✏️ تعديل بيانات وملف المستخدم" },
+            { id: "branch_access", name: "🛡️ تخصيص الصلاحيات والأفرع" },
+            { id: "print_directory", name: "🖨️ طباعة دليل حسابات الموظفين" },
+          ]
+        },
         { id: "roles_tree", name: "2. شجرة الصلاحيات والأدوار (RBAC)" },
         { id: "active_sessions", name: "3. الجلسات والأجهزة النشطة" },
         { id: "audit_logs", name: "4. سجل العمليات والرقابة" },
@@ -212,7 +231,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     { id: "audit", name: "8. سجل الرقابة", icon: ClipboardList },
   ];
 
-  type SubItem = { id: string; name: string };
+  type SubItem = { id: string; name: string; nestedSubItems?: { id: string; name: string }[] };
   type CodeItemDef = { id: string; name: string; subItems?: SubItem[] };
 
   const hrDepartments: { id: string; name: string; icon: any; items: CodeItemDef[] }[] = [
@@ -667,21 +686,60 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                                         const isSubActive = isSvcActive && currentSub === sub.id;
 
                                         return (
-                                          <div
-                                            key={sub.id}
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleNavigateOmniSub(svc.id, sub.id);
-                                            }}
-                                            className={cn(
-                                              "px-2 py-1 rounded text-[10px] font-medium cursor-pointer transition-colors flex items-center justify-between",
-                                              isSubActive
-                                                ? "bg-amber-500/20 text-amber-300 font-extrabold border border-amber-500/50"
-                                                : "text-slate-300 hover:text-white hover:bg-white/5"
+                                          <div key={sub.id} className="space-y-0.5">
+                                            <div
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleNavigateOmniSub(svc.id, sub.id);
+                                                if (sub.nestedSubItems) {
+                                                  toggleOmniDropdown(sub.id);
+                                                }
+                                              }}
+                                              className={cn(
+                                                "px-2 py-1 rounded text-[10px] font-medium cursor-pointer transition-colors flex items-center justify-between",
+                                                isSubActive
+                                                  ? "bg-amber-500/20 text-amber-300 font-extrabold border border-amber-500/50"
+                                                  : "text-slate-300 hover:text-white hover:bg-white/5"
+                                              )}
+                                            >
+                                              <span className="truncate">{sub.name}</span>
+                                              <div className="flex items-center gap-1 shrink-0">
+                                                {sub.nestedSubItems ? (
+                                                  <ChevronDown className={cn("w-3 h-3 text-amber-400/80 transition-transform", (openOmniDropdowns[sub.id] ?? true) ? "rotate-180" : "")} />
+                                                ) : (
+                                                  isSubActive && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
+                                                )}
+                                              </div>
+                                            </div>
+
+                                            {/* Nested SubItems Dropdown */}
+                                            {sub.nestedSubItems && (openOmniDropdowns[sub.id] ?? true) && (
+                                              <div className="pr-2.5 my-0.5 space-y-0.5 border-r border-amber-400/30 mr-1.5 animate-in fade-in duration-150">
+                                                {sub.nestedSubItems.map((nest) => {
+                                                  const currentSubTask = getParamFromLoc(location, "subTask") || "all_users";
+                                                  const isNestActive = isSubActive && currentSubTask === nest.id;
+
+                                                  return (
+                                                    <div
+                                                      key={nest.id}
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleNavigateOmniSubTask(svc.id, sub.id, nest.id);
+                                                      }}
+                                                      className={cn(
+                                                        "px-2 py-0.5 rounded text-[9.5px] font-medium cursor-pointer transition-colors flex items-center justify-between",
+                                                        isNestActive
+                                                          ? "bg-amber-400/30 text-amber-200 font-extrabold border border-amber-400/60"
+                                                          : "text-slate-300/80 hover:text-white hover:bg-white/10"
+                                                      )}
+                                                    >
+                                                      <span className="truncate">{nest.name}</span>
+                                                      {isNestActive && <span className="w-1 h-1 rounded-full bg-amber-300 shrink-0"></span>}
+                                                    </div>
+                                                  );
+                                                })}
+                                              </div>
                                             )}
-                                          >
-                                            <span className="truncate">{sub.name}</span>
-                                            {isSubActive && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>}
                                           </div>
                                         );
                                       })}

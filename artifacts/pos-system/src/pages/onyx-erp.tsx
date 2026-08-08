@@ -53,9 +53,18 @@ export default function OnyxErpPage() {
     return params.get("sub") || defaultSub;
   };
 
+  const getParamFromLoc = (locStr: string, paramName: string, defaultVal = "") => {
+    let search = "";
+    if (locStr.includes("?")) search = locStr.substring(locStr.indexOf("?"));
+    else search = window.location.search;
+    const params = new URLSearchParams(search);
+    return params.get(paramName) || defaultVal;
+  };
+
   const [erpActiveTab, setErpActiveTab] = useState(() => getTabFromLoc(location));
   const [activeBranchTask, setActiveBranchTask] = useState(() => getSubFromLoc(location, "company_and_branch_info"));
   const [activeRbacTask, setActiveRbacTask] = useState(() => getSubFromLoc(location, "users_list"));
+  const [activeRbacSubTask, setActiveRbacSubTask] = useState(() => getParamFromLoc(location, "subTask", "all_users"));
 
   useEffect(() => {
     const tab = getTabFromLoc(location);
@@ -66,6 +75,10 @@ export default function OnyxErpPage() {
     if (sub) {
       if (tab === "branches") setActiveBranchTask(sub);
       if (tab === "sessions") setActiveRbacTask(sub);
+    }
+    const subT = getParamFromLoc(location, "subTask", "");
+    if (subT) {
+      setActiveRbacSubTask(subT);
     }
   }, [location]);
 
@@ -79,6 +92,10 @@ export default function OnyxErpPage() {
       if (sub) {
         if (tab === "branches") setActiveBranchTask(sub);
         if (tab === "sessions") setActiveRbacTask(sub);
+      }
+      const subT = getParamFromLoc(window.location.search, "subTask", "");
+      if (subT) {
+        setActiveRbacSubTask(subT);
       }
     };
     window.addEventListener("popstate", handleUrlChange);
@@ -1848,17 +1865,17 @@ export default function OnyxErpPage() {
                 </div>
               </CardHeader>
               <CardContent className="p-4 space-y-4">
-                {/* Dynamic Dropdown Navigation Bar for RBAC Tasks */}
+                {/* Dynamic Primary Dropdown Navigation Bar for RBAC Hub */}
                 <div className="bg-gradient-to-r from-red-900/10 via-slate-900/10 to-indigo-900/10 p-3 rounded-lg border border-red-500/30 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <Shield className="w-5 h-5 text-red-600 shrink-0" />
                     <div>
                       <h4 className="text-xs font-extrabold text-slate-800">إدارة الأمان والتحكم بصلاحيات المستخدمين (RBAC Hub):</h4>
-                      <p className="text-[11px] text-slate-500">اختر المهمة المطلوبة من القائمة المنسدلة لإدارة المستخدمين أو الصلاحيات أو الجلسات</p>
+                      <p className="text-[11px] text-slate-500">اختر القسم الرئيسي أو المهام المنسدلة للتحكم بالأمان والموظفين والصلاحيات</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-slate-700 shrink-0">القائمة المنسدلة للمهام:</span>
+                    <span className="text-xs font-bold text-slate-700 shrink-0">القائمة المنسدلة للقسم الرئيسي:</span>
                     <select
                       value={activeRbacTask}
                       onChange={(e) => {
@@ -1879,6 +1896,41 @@ export default function OnyxErpPage() {
                     </select>
                   </div>
                 </div>
+
+                {/* Nested Secondary Dropdown Navigation Bar for users_list sub-tasks */}
+                {activeRbacTask === "users_list" && (
+                  <div className="bg-blue-50/90 border border-blue-300/80 p-3 rounded-lg flex flex-col md:flex-row items-center justify-between gap-3 shadow-xs animate-in fade-in duration-200">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4.5 h-4.5 text-blue-700 shrink-0" />
+                      <div>
+                        <h5 className="text-xs font-extrabold text-blue-900">القائمة المنسدلة لإدارة المستخدمين والموظفين:</h5>
+                        <p className="text-[10.5px] text-blue-700">تصفح سجلات الحسابات، إضافة موظف جديد، تعديل الصلاحيات، أو طباعة الدليل</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 w-full md:w-auto">
+                      <span className="text-xs font-bold text-blue-900 shrink-0">المهام الفرعية للمستخدمين:</span>
+                      <select
+                        value={activeRbacSubTask}
+                        onChange={(e) => {
+                          const subT = e.target.value;
+                          setActiveRbacSubTask(subT);
+                          const u = new URL(window.location.href);
+                          u.searchParams.set("tab", "sessions");
+                          u.searchParams.set("sub", "users_list");
+                          u.searchParams.set("subTask", subT);
+                          window.history.pushState({}, "", u.toString());
+                        }}
+                        className="text-xs font-bold bg-white text-blue-900 border-2 border-blue-500/60 rounded-md px-3 py-1.5 shadow-xs focus:ring-2 focus:ring-blue-600 focus:outline-none cursor-pointer w-full md:w-auto"
+                      >
+                        <option value="all_users">👥 1. دليل وسجل حسابات الموظفين (عرض الكل)</option>
+                        <option value="add_user">➕ 2. إضافة وتعريف مستخدم / موظف جديد</option>
+                        <option value="edit_user">✏️ 3. تعديل الملف الشخصي وكلمة المرور</option>
+                        <option value="branch_access">🛡️ 4. إسناد الدور الأمني والفرع الافتراضي</option>
+                        <option value="print_directory">🖨️ 5. تصدير وطباعة دليل حسابات المستخدمين</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
 
                 <Tabs value={activeRbacTask} onValueChange={(val) => {
                   setActiveRbacTask(val);
