@@ -1,17 +1,15 @@
 import express from "express";
 import path from "node:path";
 import fs from "node:fs";
-import app from "./server/app";
+import app from "../../../api-server/src/app";
 
 const PORT = 3000;
 
 export async function startServer(): Promise<any> {
-  // Determine if production or dev
   const isProd = process.env.NODE_ENV === "production" || !process.env.NODE_ENV;
 
   if (isProd) {
-    // Serve static files in production
-    const distPath = path.resolve(__dirname, "../frontend/dist");
+    const distPath = process.env.FRONTEND_DIST || path.resolve(__dirname, "dist/public");
     if (fs.existsSync(distPath)) {
       app.use(express.static(distPath));
       app.get("*", (req, res) => {
@@ -31,7 +29,6 @@ export async function startServer(): Promise<any> {
       console.log(`Server running on http://127.0.0.1:${PORT}`);
       resolve(server);
     });
-
     server.on("error", (err: any) => {
       if (err.code === "EADDRINUSE") {
         console.warn(`Port ${PORT} is already in use, assuming another instance of OmniSystem is running.`);
