@@ -1,0 +1,8 @@
+{
+  "name": "OmniSystem POS",
+  "description": "A comprehensive restaurant POS, Procurement, and Financial Accounting (OmniFinance) system with double-entry ledgers, vouchers, fixed assets, and real-time financial reporting.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
