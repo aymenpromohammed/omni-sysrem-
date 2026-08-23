@@ -55,7 +55,13 @@ import {
   Trash2,
   Link2,
   Plus,
-  RefreshCw
+  RefreshCw,
+  Plane,
+  Globe,
+  Ticket,
+  Luggage,
+  Hotel,
+  Compass
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AppIcon } from "./AppLogo";
@@ -215,6 +221,21 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         { name: "تسعير الأصناف وقوائم الأسعار", href: "/onyx-erp?tab=pricing", icon: Tags },
         { name: "العملات وأسعار الصرف", href: "/currencies", icon: Coins },
         { name: "تصميم الترويسة وشعار الوثائق", href: "/document-print-settings", icon: Palette }
+      ]
+    },
+    {
+      id: "sys_travel",
+      title: "نظام السفريات والسياحة ERP",
+      icon: Plane,
+      systemKey: "sys_travel",
+      items: [
+        { name: "لوحة تحكم السفريات والمؤشرات", href: "/travel-dashboard", icon: LayoutDashboard },
+        { name: "إدارة العملاء CRM والعقود", href: "/customers", icon: Users },
+        { name: "إدارة المسافرين Passengers", href: "/passengers", icon: Luggage },
+        { name: "حجوزات وتذاكر الطيران", href: "/travel-bookings", icon: Ticket },
+        { name: "معاملات وخدمات التأشيرات", href: "/travel-visas", icon: Globe },
+        { name: "حجوزات الفنادق والإقامة", href: "/travel-hotels", icon: Hotel },
+        { name: "البرامج والرحلات السياحية", href: "/travel-tours", icon: Compass }
       ]
     },
     {

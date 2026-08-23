@@ -1268,6 +1268,123 @@ function runMigrations() {
   try { db.exec("ALTER TABLE suppliers ADD COLUMN notes TEXT"); } catch {}
 
   // ────────────────────────────────────────────────────────
+  // TRAVEL & TOURISM ERP TABLES & MIGRATIONS
+  // ────────────────────────────────────────────────────────
+  try { db.exec("ALTER TABLE customers ADD COLUMN name_en TEXT"); } catch {}
+  try { db.exec("ALTER TABLE customers ADD COLUMN alternate_phone TEXT"); } catch {}
+  try { db.exec("ALTER TABLE customers ADD COLUMN nationality TEXT"); } catch {}
+  try { db.exec("ALTER TABLE customers ADD COLUMN country TEXT"); } catch {}
+  try { db.exec("ALTER TABLE customers ADD COLUMN dob TEXT"); } catch {}
+  try { db.exec("ALTER TABLE customers ADD COLUMN gender TEXT"); } catch {}
+  try { db.exec("ALTER TABLE customers ADD COLUMN national_id TEXT"); } catch {}
+  try { db.exec("ALTER TABLE customers ADD COLUMN passport_number TEXT"); } catch {}
+  try { db.exec("ALTER TABLE customers ADD COLUMN passport_issue_date TEXT"); } catch {}
+  try { db.exec("ALTER TABLE customers ADD COLUMN passport_expiry_date TEXT"); } catch {}
+  try { db.exec("ALTER TABLE customers ADD COLUMN employer TEXT"); } catch {}
+  try { db.exec("ALTER TABLE customers ADD COLUMN notes TEXT"); } catch {}
+  try { db.exec("ALTER TABLE customers ADD COLUMN customer_type TEXT DEFAULT 'individual'"); } catch {}
+
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS travel_passengers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        customer_id INTEGER REFERENCES customers(id) ON DELETE SET NULL,
+        name_ar TEXT NOT NULL,
+        name_en TEXT NOT NULL,
+        title TEXT DEFAULT 'Mr',
+        dob TEXT,
+        gender TEXT,
+        nationality TEXT,
+        passport_number TEXT,
+        passport_issue_date TEXT,
+        passport_expiry_date TEXT,
+        passport_issue_place TEXT,
+        passport_type TEXT DEFAULT 'عادي',
+        national_id TEXT,
+        phone TEXT,
+        email TEXT,
+        special_notes TEXT,
+        created_at TEXT DEFAULT (datetime('now', 'localtime'))
+      );
+
+      CREATE TABLE IF NOT EXISTS travel_bookings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        booking_number TEXT UNIQUE NOT NULL,
+        service_type TEXT NOT NULL DEFAULT 'flight',
+        customer_id INTEGER REFERENCES customers(id),
+        passenger_id INTEGER REFERENCES travel_passengers(id),
+        airline_supplier TEXT,
+        flight_number TEXT,
+        origin_city TEXT,
+        destination_city TEXT,
+        departure_date TEXT,
+        return_date TEXT,
+        ticket_number TEXT,
+        pnr TEXT,
+        status TEXT DEFAULT 'confirmed',
+        issue_date TEXT,
+        cost_price REAL DEFAULT 0,
+        selling_price REAL DEFAULT 0,
+        commission REAL DEFAULT 0,
+        payment_status TEXT DEFAULT 'paid',
+        payment_method TEXT DEFAULT 'cash',
+        branch_id INTEGER DEFAULT 1,
+        user_id INTEGER REFERENCES users(id),
+        user_name TEXT,
+        notes TEXT,
+        missing_docs TEXT,
+        created_at TEXT DEFAULT (datetime('now', 'localtime'))
+      );
+
+      CREATE TABLE IF NOT EXISTS travel_visas (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        visa_number TEXT UNIQUE,
+        customer_id INTEGER REFERENCES customers(id),
+        passenger_id INTEGER REFERENCES travel_passengers(id),
+        country TEXT NOT NULL,
+        visa_type TEXT DEFAULT 'سياحية',
+        status TEXT DEFAULT 'under_process',
+        application_date TEXT,
+        expiry_date TEXT,
+        cost_price REAL DEFAULT 0,
+        selling_price REAL DEFAULT 0,
+        missing_docs TEXT,
+        notes TEXT,
+        created_at TEXT DEFAULT (datetime('now', 'localtime'))
+      );
+
+      CREATE TABLE IF NOT EXISTS travel_hotels (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        booking_ref TEXT UNIQUE,
+        customer_id INTEGER REFERENCES customers(id),
+        passenger_id INTEGER REFERENCES travel_passengers(id),
+        hotel_name TEXT NOT NULL,
+        city_country TEXT NOT NULL,
+        check_in TEXT,
+        check_out TEXT,
+        room_type TEXT DEFAULT 'مزدوجة',
+        nights INTEGER DEFAULT 1,
+        cost_price REAL DEFAULT 0,
+        selling_price REAL DEFAULT 0,
+        status TEXT DEFAULT 'confirmed',
+        notes TEXT,
+        created_at TEXT DEFAULT (datetime('now', 'localtime'))
+      );
+
+      CREATE TABLE IF NOT EXISTS travel_contact_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        customer_id INTEGER NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+        contact_date TEXT DEFAULT (datetime('now', 'localtime')),
+        contact_type TEXT DEFAULT 'اتصال',
+        summary TEXT NOT NULL,
+        user_name TEXT
+      );
+    `);
+  } catch (e) {
+    console.error("Error running travel migrations:", e);
+  }
+
+  // ────────────────────────────────────────────────────────
   // ENHANCED INVENTORY SYSTEM TABLES & MIGRATIONS
   // ────────────────────────────────────────────────────────
   try {
@@ -1963,7 +2080,76 @@ function seedData() {
     db.prepare(`
       INSERT INTO licenses (license_key, client_name, devices_limit, expires_at, active)
       VALUES (?, ?, ?, ?, 1)
-    `).run("ITQAN-SOFT-DEV-TRIAL-2027", "مطعم المذاق الراقي", 10, "2027-12-31");
+    `).run("ITQAN-SOFT-DEV-TRIAL-2027", "شركة أومني لسفريات والسياحة", 10, "2027-12-31");
+  }
+
+  // Seed Travel & Tourism initial sample data if travel_passengers is empty
+  const paxCount = (db.prepare("SELECT COUNT(*) as c FROM travel_passengers").get() as { c: number }).c;
+  if (paxCount === 0) {
+    // Ensure sample travel customers exist
+    const custInsert = db.prepare(`
+      INSERT INTO customers (name, name_en, phone, alternate_phone, email, address, nationality, country, dob, gender, national_id, passport_number, passport_issue_date, passport_expiry_date, employer, notes, customer_type)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    const c1 = custInsert.run("عبدالله محمد العتيبي", "Abdullah Al-Otaibi", "0505544332", "0501122334", "abdullah@otaibitravel.sa", "الرياض - حي العليا", "سعودي", "السعودية", "1985-06-15", "ذكر", "1088776655", "A12345678", "2021-01-10", "2031-01-09", "شركة أرامكو", "عميل VIP دائم - يفضل المقاعد الأمامية في الرحلات", "vip");
+    const c2 = custInsert.run("شركة الأفق للاستشارات والهندسة", "Horizon Consulting Co.", "0114567890", "0554433221", "travel@horizon-eng.com", "جدة - طريق الملك عبد العزيز", "سعودي", "السعودية", "", "شركة", "7001234567", "", "", "", "شركة استشارات", "حساب شركة آجل - تسوية شهرية", "corporate");
+    const c3 = custInsert.run("فاطمة علي الزهراني", "Fatima Al-Zahrani", "0567788990", "0509988776", "fatima.zahrani@gmail.com", "الدمام - الشاطئ", "سعودية", "السعودية", "1992-11-20", "أنثى", "1099887766", "B98765432", "2022-05-14", "2027-02-10", "وزارة التعليم", "تحتاج تأشيرة شنغن وتذاكر طيران إلى فرنسا", "debtor");
+
+    const custId1 = Number(c1.lastInsertRowid);
+    const custId2 = Number(c2.lastInsertRowid);
+    const custId3 = Number(c3.lastInsertRowid);
+
+    // Insert Passengers (Decoupled concept)
+    const paxInsert = db.prepare(`
+      INSERT INTO travel_passengers (customer_id, name_ar, name_en, title, dob, gender, nationality, passport_number, passport_issue_date, passport_expiry_date, passport_issue_place, passport_type, national_id, phone, email, special_notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    const p1 = paxInsert.run(custId1, "عبدالله محمد العتيبي", "Abdullah Mohammed Al-Otaibi", "Mr", "1985-06-15", "ذكر", "سعودي", "A12345678", "2021-01-10", "2031-01-09", "الرياض", "عادي", "1088776655", "0505544332", "abdullah@otaibitravel.sa", "وجبة خالية من الغلوتين / نافذة");
+    const p2 = paxInsert.run(custId1, "سارة عبدالله العتيبي", "Sarah Abdullah Al-Otaibi", "Mrs", "1988-09-12", "أنثى", "سعودية", "A87654321", "2022-03-01", "2032-02-28", "الرياض", "عادي", "1088776656", "0505544332", "sarah@gmail.com", "مقعد بجانب الزوج");
+    const p3 = paxInsert.run(custId2, "د. طارق محمود السيد", "Dr. Tarek Mahmoud El-Sayed", "Mr", "1978-04-05", "ذكر", "مصري", "P99887711", "2020-08-15", "2027-01-15", "القاهرة", "عادي", "27804051234", "0554433221", "tarek@horizon-eng.com", "درجة رجال الأعمال");
+    const p4 = paxInsert.run(custId3, "فاطمة علي الزهراني", "Fatima Ali Al-Zahrani", "Ms", "1992-11-20", "أنثى", "سعودية", "B98765432", "2022-05-14", "2027-02-10", "الدمام", "عادي", "1099887766", "0567788990", "fatima.zahrani@gmail.com", "تأشيرة فرنسا / باريس");
+
+    const paxId1 = Number(p1.lastInsertRowid);
+    const paxId2 = Number(p2.lastInsertRowid);
+    const paxId3 = Number(p3.lastInsertRowid);
+    const paxId4 = Number(p4.lastInsertRowid);
+
+    // Insert Travel Bookings
+    const bkInsert = db.prepare(`
+      INSERT INTO travel_bookings (booking_number, service_type, customer_id, passenger_id, airline_supplier, flight_number, origin_city, destination_city, departure_date, return_date, ticket_number, pnr, status, issue_date, cost_price, selling_price, commission, payment_status, payment_method, user_name, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    bkInsert.run("TKT-2026-001", "flight", custId1, paxId1, "الخطوط السعودية (Saudia)", "SV-112", "الرياض (RUH)", "دبي (DXB)", "2026-09-10", "2026-09-18", "065-2415896321", "PNR-X78Y90", "confirmed", "2026-08-20", 1200, 1500, 300, "paid", "card", "مدير النظام", "رحلة عمل ومهمة رسمية");
+    bkInsert.run("TKT-2026-002", "flight", custId1, paxId2, "الخطوط السعودية (Saudia)", "SV-112", "الرياض (RUH)", "دبي (DXB)", "2026-09-10", "2026-09-18", "065-2415896322", "PNR-X78Y90", "confirmed", "2026-08-20", 1200, 1500, 300, "paid", "card", "مدير النظام", "مرافقة الزوج");
+    bkInsert.run("TKT-2026-003", "flight", custId2, paxId3, "طيران الإمارات (Emirates)", "EK-814", "جدة (JED)", "القاهرة (CAI)", "2026-09-01", "2026-09-15", "176-9874123654", "PNR-E45T11", "pending_issue", "", 1800, 2200, 400, "unpaid", "credit", "موظف المبيعات", "في انتظار موافقة الإدارة وتأكيد الدفع الآجل");
+    bkInsert.run("TKT-2026-004", "flight", custId3, paxId4, "الخطوط الفرنسية (Air France)", "AF-521", "الرياض (RUH)", "باريس (CDG)", "2026-09-25", "2026-10-05", "057-3322114455", "PNR-F88Q32", "issued", "2026-08-22", 3200, 3800, 600, "partial", "cash", "مدير النظام", "تم إصدار التذكرة بنجاح");
+
+    // Insert Travel Visas
+    const visaInsert = db.prepare(`
+      INSERT INTO travel_visas (visa_number, customer_id, passenger_id, country, visa_type, status, application_date, expiry_date, cost_price, selling_price, missing_docs, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    visaInsert.run("VSA-9901", custId3, paxId4, "فرنسا (شنغن)", "سياحية متعدية", "under_process", "2026-08-15", "2026-08-28", 450, 650, "حساب بنكي معتمد لآخر 6 أشهر", "موعد البصمة تم حجزه يوم 25 أغسطس");
+    visaInsert.run("VSA-9902", custId1, paxId1, "الإمارات", "تأشيرة مقيم خليجي", "approved", "2026-08-01", "2026-11-01", 200, 350, "", "تم الإصدار وبانتظار تسليم العميل");
+
+    // Insert Travel Hotels
+    const hotelInsert = db.prepare(`
+      INSERT INTO travel_hotels (booking_ref, customer_id, passenger_id, hotel_name, city_country, check_in, check_out, room_type, nights, cost_price, selling_price, status, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    hotelInsert.run("HTL-7701", custId1, paxId1, "فندق أتلانتس النخيل", "دبي - الإمارات", "2026-09-10", "2026-09-18", "جناح ديلوكس مطل على البحر", 8, 8000, 9800, "confirmed", "تشمل الإفطار والاستخدام المجاني للألعاب المائية");
+    hotelInsert.run("HTL-7702", custId3, paxId4, "فندق بولمان باريس إيفل", "باريس - فرنسا", "2026-09-25", "2026-10-05", "غرفة كلاسيكية مزدوجة", 10, 11000, 13500, "confirmed", "إطلالة مباشرة على برج إيفل");
+
+    // Insert Contact Logs
+    const logInsert = db.prepare(`
+      INSERT INTO travel_contact_logs (customer_id, contact_type, summary, user_name)
+      VALUES (?, ?, ?, ?)
+    `);
+    logInsert.run(custId1, "واتساب", "تم إرسال جدول الرحلة وتأكيد حجز فندق أتلانتس دبي عبر الواتساب.", "مدير النظام");
+    logInsert.run(custId3, "اتصال", "تذكير العميل بضرورة إحاطة الحساب البنكي المعتمد لمركز التأشيرات قبل موعد البصمة.", "موظف المبيعات");
   }
 }
 

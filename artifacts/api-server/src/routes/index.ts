@@ -34,6 +34,7 @@ import safesRouter from "./safes";
 import onyxRouter from "./onyx";
 import backupRouter from "./backup";
 import cashierStatementRouter from "./cashier-statement";
+import travelRouter from "./travel";
 
 const router: IRouter = Router();
 
@@ -72,5 +73,6 @@ router.use(safesRouter);
 router.use(onyxRouter);
 router.use(backupRouter);
 router.use(cashierStatementRouter);
+router.use(travelRouter);
 
 export default router;

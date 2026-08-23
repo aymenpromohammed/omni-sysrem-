@@ -42,11 +42,34 @@ const queryClient = new QueryClient({
 
 import BackupRestorePage from "./pages/backup-restore";
 import CashierStatement from "./pages/cashier-statement";
+import TravelDashboardPage from "./pages/travel-dashboard";
+import PassengersPage from "./pages/passengers";
+import TravelBookingsPage from "./pages/travel-bookings";
+import TravelVisasPage from "./pages/travel-visas";
+import TravelHotelsPage from "./pages/travel-hotels";
 
 function Router() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
+      <Route path="/travel-dashboard">
+        <ProtectedRoute requireAdmin><TravelDashboardPage /></ProtectedRoute>
+      </Route>
+      <Route path="/passengers">
+        <ProtectedRoute requireAdmin><PassengersPage /></ProtectedRoute>
+      </Route>
+      <Route path="/travel-bookings">
+        <ProtectedRoute requireAdmin><TravelBookingsPage /></ProtectedRoute>
+      </Route>
+      <Route path="/travel-visas">
+        <ProtectedRoute requireAdmin><TravelVisasPage /></ProtectedRoute>
+      </Route>
+      <Route path="/travel-hotels">
+        <ProtectedRoute requireAdmin><TravelHotelsPage /></ProtectedRoute>
+      </Route>
+      <Route path="/travel-tours">
+        <ProtectedRoute requireAdmin><TravelHotelsPage /></ProtectedRoute>
+      </Route>
       <Route path="/backup-restore">
         <ProtectedRoute requireAdmin><BackupRestorePage /></ProtectedRoute>
       </Route>
