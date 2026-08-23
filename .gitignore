@@ -1,0 +1,13 @@
+node_modules/
+build/
+dist/
+dist-desktop/
+*.sqlite
+*.db
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+node-compile-cache/
+artifacts/pos-system/.tsbuildinfo
